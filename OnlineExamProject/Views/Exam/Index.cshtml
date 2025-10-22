@@ -1,0 +1,83 @@
+@model IEnumerable<OnlineExamProject.Models.Exam>
+
+@{
+    ViewData["Title"] = "Sınavlarım";
+}
+
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2>Sınavlarım</h2>
+                <a asp-action="Create" class="btn btn-success">Yeni Sınav Oluştur</a>
+            </div>
+            
+            @if (Model != null && Model.Any())
+            {
+                <div class="table-responsive">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>Sınav Adı</th>
+                                <th>Ders</th>
+                                <th>Başlangıç</th>
+                                <th>Bitiş</th>
+                                <th>Soru Sayısı</th>
+                                <th>Durum</th>
+                                <th>İşlemler</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var exam in Model)
+                            {
+                                <tr>
+                                    <td>@exam.ExamTitle</td>
+                                    <td>@exam.Course.CourseName</td>
+                                    <td>@exam.StartTime.ToString("dd.MM.yyyy HH:mm")</td>
+                                    <td>@exam.EndTime.ToString("dd.MM.yyyy HH:mm")</td>
+                                    <td>@exam.Questions.Count</td>
+                                    <td>
+                                        @{
+                                            var now = DateTime.Now;
+                                            var status = now < exam.StartTime ? "Bekliyor" : 
+                                                       now > exam.EndTime ? "Bitti" : "Aktif";
+                                            var badgeClass = now < exam.StartTime ? "bg-warning" : 
+                                                           now > exam.EndTime ? "bg-secondary" : "bg-success";
+                                        }
+                                        <span class="badge @badgeClass">@status</span>
+                                    </td>
+                                    <td>
+                                        <a asp-action="Details" asp-route-id="@exam.ExamId" class="btn btn-sm btn-info">Detay</a>
+                                        @{
+                                            var currentTime = DateTime.Now;
+                                            var canEdit = currentTime < exam.StartTime; // Sadece bekleyen sınavlar düzenlenebilir
+                                        }
+                                        @if (canEdit)
+                                        {
+                                            <a asp-action="Edit" asp-route-id="@exam.ExamId" class="btn btn-sm btn-warning">Düzenle</a>
+                                            <form asp-action="Delete" asp-route-id="@exam.ExamId" method="post" class="d-inline">
+                                                <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('Bu sınavı silmek istediğinizden emin misiniz?')">Sil</button>
+                                            </form>
+                                        }
+                                        else
+                                        {
+                                            <span class="text-muted">Düzenlenemez</span>
+                                        }
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+            else
+            {
+                <div class="alert alert-info">
+                    <h5>Henüz sınav oluşturmadınız.</h5>
+                    <p>İlk sınavınızı oluşturmak için yukarıdaki butonu kullanabilirsiniz.</p>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+

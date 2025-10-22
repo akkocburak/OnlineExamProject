@@ -1,0 +1,78 @@
+@model OnlineExamProject.Models.Exam
+
+@{
+    ViewData["Title"] = "Yeni Sınav Oluştur";
+}
+
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-12">
+            <h2>Yeni Sınav Oluştur</h2>
+            <hr>
+            
+            @if (TempData["SuccessMessage"] != null)
+            {
+                <div class="alert alert-success">@TempData["SuccessMessage"]</div>
+            }
+            @if (TempData["ErrorMessage"] != null)
+            {
+                <div class="alert alert-danger">@TempData["ErrorMessage"]</div>
+            }
+            
+            <form asp-action="Create" method="post">
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label for="examTitle" class="form-label">Sınav Başlığı</label>
+                            <input type="text" id="examTitle" name="examTitle" class="form-control" required />
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label for="courseId" class="form-label">Ders</label>
+                            <select id="courseId" name="courseId" class="form-control" required>
+                                <option value="">Ders Seçin</option>
+                                @if (ViewBag.Courses != null)
+                                {
+                                    @foreach (var course in (IEnumerable<OnlineExamProject.Models.Course>)ViewBag.Courses)
+                                    {
+                                        <option value="@course.CourseId">@course.CourseName</option>
+                                    }
+                                }
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label for="startTime" class="form-label">Başlangıç Tarihi</label>
+                            <input type="datetime-local" id="startTime" name="startTime" class="form-control" required />
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label for="endTime" class="form-label">Bitiş Tarihi</label>
+                            <input type="datetime-local" id="endTime" name="endTime" class="form-control" required />
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="mb-3">
+                    <div class="form-check">
+                        <input type="checkbox" id="allowBackNavigation" name="allowBackNavigation" class="form-check-input" value="true" />
+                        <label for="allowBackNavigation" class="form-check-label">
+                            Öğrenciler sorulara geri dönebilir
+                        </label>
+                    </div>
+                </div>
+                
+                <div class="mb-3">
+                    <button type="submit" class="btn btn-success">Sınav Oluştur</button>
+                    <a asp-action="Index" class="btn btn-secondary">İptal</a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>

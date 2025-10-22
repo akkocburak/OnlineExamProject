@@ -1,0 +1,201 @@
+@model OnlineExamProject.Models.QuestionBank
+
+@{
+    ViewData["Title"] = "Yeni Soru Ekle";
+}
+
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h4><i class="fas fa-plus"></i> Soru Bankasına Yeni Soru Ekle</h4>
+                </div>
+                <div class="card-body">
+                    <form asp-action="Create" method="post" enctype="multipart/form-data">
+                        <div class="mb-3">
+                            <label asp-for="CourseId" class="form-label">Ders</label>
+                            <select asp-for="CourseId" class="form-control" required>
+                                <option value="">Ders Seçiniz</option>
+                                @if (ViewBag.Courses != null)
+                                {
+                                    @foreach (var course in (IEnumerable<OnlineExamProject.Models.Course>)ViewBag.Courses)
+                                    {
+                                        <option value="@course.CourseId">@course.CourseName</option>
+                                    }
+                                }
+                            </select>
+                            <span asp-validation-for="CourseId" class="text-danger"></span>
+                        </div>
+
+                        <div class="mb-3">
+                            <label asp-for="QuestionText" class="form-label">Soru Metni</label>
+                            <textarea asp-for="QuestionText" class="form-control" rows="4" required></textarea>
+                            <span asp-validation-for="QuestionText" class="text-danger"></span>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="imageFile" class="form-label">Soru Resmi (Opsiyonel)</label>
+                            <input type="file" id="imageFile" name="imageFile" class="form-control" accept="image/*" />
+                            <small class="form-text text-muted">Şekilli sorular için resim yükleyebilirsiniz.</small>
+                        </div>
+
+                        <div class="mb-3">
+                            <label asp-for="OptionCount" class="form-label">Seçenek Sayısı</label>
+                            <select asp-for="OptionCount" class="form-control" required onchange="toggleOptionE()">
+                                <option value="4">4 Seçenek</option>
+                                <option value="5">5 Seçenek</option>
+                            </select>
+                            <span asp-validation-for="OptionCount" class="text-danger"></span>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label asp-for="OptionA" class="form-label">A) Seçenek</label>
+                                    <input asp-for="OptionA" class="form-control" required />
+                                    <span asp-validation-for="OptionA" class="text-danger"></span>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label asp-for="OptionB" class="form-label">B) Seçenek</label>
+                                    <input asp-for="OptionB" class="form-control" required />
+                                    <span asp-validation-for="OptionB" class="text-danger"></span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label asp-for="OptionC" class="form-label">C) Seçenek</label>
+                                    <input asp-for="OptionC" class="form-control" required />
+                                    <span asp-validation-for="OptionC" class="text-danger"></span>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label asp-for="OptionD" class="form-label">D) Seçenek</label>
+                                    <input asp-for="OptionD" class="form-control" required />
+                                    <span asp-validation-for="OptionD" class="text-danger"></span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row" id="optionERow" style="display: none;">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label asp-for="OptionE" class="form-label">E) Seçenek</label>
+                                    <input asp-for="OptionE" class="form-control" />
+                                    <span asp-validation-for="OptionE" class="text-danger"></span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    <label asp-for="CorrectOption" class="form-label">Doğru Cevap</label>
+                                    <select asp-for="CorrectOption" class="form-control" required>
+                                        <option value="">Seçiniz</option>
+                                        <option value="A">A</option>
+                                        <option value="B">B</option>
+                                        <option value="C">C</option>
+                                        <option value="D">D</option>
+                                        <option value="E" id="correctOptionE" style="display: none;">E</option>
+                                    </select>
+                                    <span asp-validation-for="CorrectOption" class="text-danger"></span>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    <label asp-for="Points" class="form-label">Puan</label>
+                                    <input asp-for="Points" class="form-control" min="1" max="100" value="1" required />
+                                    <span asp-validation-for="Points" class="text-danger"></span>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    <label asp-for="Difficulty" class="form-label">Zorluk</label>
+                                    <select asp-for="Difficulty" class="form-control" required>
+                                        <option value="Kolay">Kolay</option>
+                                        <option value="Orta" selected>Orta</option>
+                                        <option value="Zor">Zor</option>
+                                    </select>
+                                    <span asp-validation-for="Difficulty" class="text-danger"></span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label asp-for="Tags" class="form-label">Etiketler (Opsiyonel)</label>
+                            <input asp-for="Tags" class="form-control" placeholder="Örnek: matematik, geometri, trigonometri" />
+                            <small class="form-text text-muted">Soru kategorilerini virgülle ayırarak yazabilirsiniz.</small>
+                            <span asp-validation-for="Tags" class="text-danger"></span>
+                        </div>
+
+                        <div class="mb-3">
+                            <button type="submit" class="btn btn-success">
+                                <i class="fas fa-save"></i> Soruyu Kaydet
+                            </button>
+                            <a asp-action="Index" class="btn btn-secondary">
+                                <i class="fas fa-arrow-left"></i> Geri Dön
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="fas fa-info-circle"></i> Bilgi</h5>
+                </div>
+                <div class="card-body">
+                    <h6>Soru Bankası Nedir?</h6>
+                    <p class="small">Soru bankası, daha sonra sınavlarda kullanmak üzere soruları sakladığınız yerdir.</p>
+                    
+                    <h6>Avantajları:</h6>
+                    <ul class="small">
+                        <li>Soruları tekrar kullanabilirsiniz</li>
+                        <li>Zaman tasarrufu sağlar</li>
+                        <li>Soruları kategorize edebilirsiniz</li>
+                        <li>Zorluk seviyesine göre filtreleyebilirsiniz</li>
+                    </ul>
+                    
+                    <h6>İpuçları:</h6>
+                    <ul class="small">
+                        <li>Etiketleri kullanarak soruları kategorize edin</li>
+                        <li>Zorluk seviyesini doğru belirleyin</li>
+                        <li>Açıklayıcı soru metinleri yazın</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    function toggleOptionE() {
+        var optionCount = document.getElementById('OptionCount').value;
+        var optionERow = document.getElementById('optionERow');
+        var correctOptionE = document.getElementById('correctOptionE');
+        
+        if (optionCount == '5') {
+            optionERow.style.display = 'block';
+            correctOptionE.style.display = 'block';
+            document.getElementById('OptionE').required = true;
+        } else {
+            optionERow.style.display = 'none';
+            correctOptionE.style.display = 'none';
+            document.getElementById('OptionE').required = false;
+            document.getElementById('OptionE').value = '';
+            
+            // E seçeneği seçiliyse A'ya çevir
+            if (document.getElementById('CorrectOption').value == 'E') {
+                document.getElementById('CorrectOption').value = 'A';
+            }
+        }
+    }
+</script>

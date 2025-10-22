@@ -1,0 +1,181 @@
+@model IEnumerable<OnlineExamProject.Models.QuestionBank>
+
+@{
+    ViewData["Title"] = "Soru Bankası";
+}
+
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h2><i class="fas fa-database"></i> Soru Bankası</h2>
+                <a asp-action="Create" class="btn btn-success">
+                    <i class="fas fa-plus"></i> Yeni Soru Ekle
+                </a>
+            </div>
+
+            @if (TempData["SuccessMessage"] != null)
+            {
+                <div class="alert alert-success">@TempData["SuccessMessage"]</div>
+            }
+
+            <!-- Arama ve Filtreleme -->
+            <div class="card mb-4">
+                <div class="card-body">
+                    <form method="get" class="row g-3">
+                        <div class="col-md-4">
+                            <label for="searchTerm" class="form-label">Arama</label>
+                            <input type="text" class="form-control" id="searchTerm" name="searchTerm" 
+                                   value="@ViewBag.SearchTerm" placeholder="Soru metni veya etiket ara...">
+                        </div>
+                        <div class="col-md-3">
+                            <label for="difficulty" class="form-label">Zorluk</label>
+                            <select class="form-control" id="difficulty" name="difficulty">
+                                <option value="">Tümü</option>
+                                <option value="Kolay" selected="@(ViewBag.Difficulty == "Kolay")">Kolay</option>
+                                <option value="Orta" selected="@(ViewBag.Difficulty == "Orta")">Orta</option>
+                                <option value="Zor" selected="@(ViewBag.Difficulty == "Zor")">Zor</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label for="courseId" class="form-label">Ders</label>
+                            <select class="form-control" id="courseId" name="courseId">
+                                <option value="">Tümü</option>
+                                @if (ViewBag.Courses != null)
+                                {
+                                    @foreach (var course in (IEnumerable<OnlineExamProject.Models.Course>)ViewBag.Courses)
+                                    {
+                                        <option value="@course.CourseId" selected="@(ViewBag.CourseId?.ToString() == course.CourseId.ToString())">
+                                            @course.CourseName
+                                        </option>
+                                    }
+                                }
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label">&nbsp;</label>
+                            <div>
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-search"></i> Ara
+                                </button>
+                                <a asp-action="Index" class="btn btn-secondary">
+                                    <i class="fas fa-times"></i> Temizle
+                                </a>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Soru Listesi -->
+            <div class="card">
+                <div class="card-header">
+                    <h5>Sorular (@Model.Count())</h5>
+                </div>
+                <div class="card-body">
+                    @if (Model.Any())
+                    {
+                        <div class="row">
+                            @foreach (var question in Model)
+                            {
+                                <div class="col-md-6 mb-4">
+                                    <div class="card h-100">
+                                        <div class="card-body">
+                                            <h6 class="card-title">
+                                                @question.QuestionText.Substring(0, Math.Min(80, question.QuestionText.Length))
+                                                @if (question.QuestionText.Length > 80) { <text>...</text> }
+                                            </h6>
+                                            
+                                            @if (!string.IsNullOrEmpty(question.ImagePath))
+                                            {
+                                                <img src="@question.ImagePath" alt="Soru Resmi" class="img-fluid mb-2" style="max-height: 100px;" />
+                                            }
+                                            
+                                            <div class="mb-2">
+                                                <span class="badge bg-primary">@question.Course.CourseName</span>
+                                                <span class="badge bg-@(question.Difficulty == "Kolay" ? "success" : question.Difficulty == "Orta" ? "warning" : "danger")">
+                                                    @question.Difficulty
+                                                </span>
+                                                <span class="badge bg-info">@question.Points puan</span>
+                                            </div>
+                                            
+                                            @if (!string.IsNullOrEmpty(question.Tags))
+                                            {
+                                                <div class="mb-2">
+                                                    <small class="text-muted">
+                                                        <i class="fas fa-tags"></i> @question.Tags
+                                                    </small>
+                                                </div>
+                                            }
+                                            
+                                            <div class="mb-2">
+                                                <small class="text-muted">
+                                                    <strong>Seçenekler:</strong><br>
+                                                    A) @(question.OptionA.Length > 30 ? question.OptionA.Substring(0, 30) + "..." : question.OptionA)<br>
+                                                    B) @(question.OptionB.Length > 30 ? question.OptionB.Substring(0, 30) + "..." : question.OptionB)<br>
+                                                    C) @(question.OptionC.Length > 30 ? question.OptionC.Substring(0, 30) + "..." : question.OptionC)<br>
+                                                    D) @(question.OptionD.Length > 30 ? question.OptionD.Substring(0, 30) + "..." : question.OptionD)
+                                                    @if (question.OptionCount == 5 && !string.IsNullOrEmpty(question.OptionE))
+                                                    {
+                                                        <br />@:E) @(question.OptionE.Length > 30 ? question.OptionE.Substring(0, 30) + "..." : question.OptionE)
+                                                    }
+                                                </small>
+                                            </div>
+                                            
+                                            <div class="mb-2">
+                                                <small class="text-success">
+                                                    <strong>Doğru Cevap:</strong> @question.CorrectOption
+                                                </small>
+                                            </div>
+                                        </div>
+                                        <div class="card-footer">
+                                            <div class="btn-group w-100" role="group">
+                                                <a asp-action="Edit" asp-route-id="@question.QuestionBankId" class="btn btn-primary btn-sm">
+                                                    <i class="fas fa-edit"></i> Düzenle
+                                                </a>
+                                                <button type="button" class="btn btn-danger btn-sm" 
+                                                        onclick="deleteQuestion(@question.QuestionBankId)">
+                                                    <i class="fas fa-trash"></i> Sil
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="alert alert-info text-center">
+                            <i class="fas fa-info-circle fa-2x mb-3"></i>
+                            <h5>Soru bulunamadı</h5>
+                            <p>Arama kriterlerinize uygun soru bulunamadı.</p>
+                            <a asp-action="Create" class="btn btn-success">
+                                <i class="fas fa-plus"></i> İlk Sorunuzu Ekleyin
+                            </a>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    function deleteQuestion(questionId) {
+        if (confirm('Bu soruyu silmek istediğinizden emin misiniz?')) {
+            var form = document.createElement('form');
+            form.method = 'POST';
+            form.action = '/QuestionBank/Delete';
+            
+            var input = document.createElement('input');
+            input.type = 'hidden';
+            input.name = 'id';
+            input.value = questionId;
+            
+            form.appendChild(input);
+            document.body.appendChild(form);
+            form.submit();
+        }
+    }
+</script>

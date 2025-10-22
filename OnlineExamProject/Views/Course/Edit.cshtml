@@ -1,0 +1,36 @@
+@model OnlineExamProject.Models.Course
+
+@{
+    ViewData["Title"] = "Ders Düzenle";
+}
+
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-12">
+            <h2>Ders Düzenle</h2>
+            <hr>
+            
+            <form asp-action="Edit" method="post">
+                <input asp-for="CourseId" type="hidden" />
+                <input asp-for="TeacherId" type="hidden" />
+                <input asp-for="CreatedAt" type="hidden" />
+                
+                <div class="mb-3">
+                    <label asp-for="CourseName" class="form-label">Ders Adı</label>
+                    <input asp-for="CourseName" class="form-control" required />
+                    <span asp-validation-for="CourseName" class="text-danger"></span>
+                </div>
+                
+                <div class="mb-3">
+                    <button type="submit" class="btn btn-success">Güncelle</button>
+                    <a asp-action="Index" class="btn btn-secondary">İptal</a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+
+
+
+

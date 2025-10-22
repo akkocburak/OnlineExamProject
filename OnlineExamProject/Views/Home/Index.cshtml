@@ -1,0 +1,127 @@
+﻿@{
+    ViewData["Title"] = "Ana Sayfa";
+}
+
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="jumbotron bg-light p-4 rounded">
+                <h1 class="display-4">Hoş Geldiniz, @ViewBag.UserName!</h1>
+                <p class="lead">Online Sınav Sistemine hoş geldiniz.</p>
+                <hr class="my-4">
+                <p>@(ViewBag.UserRole == "Teacher" ? "Öğretmen" : "Öğrenci") olarak giriş yaptınız.</p>
+            </div>
+        </div>
+    </div>
+
+    @if (ViewBag.UserRole == "Student")
+    {
+        <div class="row mt-4">
+            <div class="col-12">
+                <h3>Aktif Sınavlar</h3>
+                @if (ViewBag.ActiveExams != null && ((IEnumerable<OnlineExamProject.Models.Exam>)ViewBag.ActiveExams).Any())
+                {
+                    <div class="row">
+                        @foreach (var exam in (IEnumerable<OnlineExamProject.Models.Exam>)ViewBag.ActiveExams)
+                        {
+                            <div class="col-md-6 mb-3">
+                                <div class="card">
+                                    <div class="card-body">
+                                        <h5 class="card-title">@exam.ExamTitle</h5>
+                                        <p class="card-text">
+                                            <strong>Ders:</strong> @exam.Course.CourseName<br>
+                                            <strong>Başlangıç:</strong> @exam.StartTime.ToString("dd.MM.yyyy HH:mm")<br>
+                                            <strong>Bitiş:</strong> @exam.EndTime.ToString("dd.MM.yyyy HH:mm")
+                                        </p>
+                                        <a asp-controller="Exam" asp-action="StartExam" asp-route-examId="@exam.ExamId" 
+                                           class="btn btn-primary" onclick="return confirm('Sınava başlamak istediğinizden emin misiniz?')">
+                                            Sınava Başla
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                }
+                else
+                {
+                    <div class="alert alert-info">
+                        <p>Şu anda aktif sınav bulunmuyor.</p>
+                    </div>
+                }
+            </div>
+        </div>
+
+        <div class="row mt-4">
+            <div class="col-12">
+                <a asp-controller="Exam" asp-action="MyResults" class="btn btn-secondary">Sınav Sonuçlarım</a>
+            </div>
+        </div>
+    }
+    else if (ViewBag.UserRole == "Teacher")
+    {
+        <div class="row mt-4">
+            <div class="col-md-6 mb-3">
+                <div class="card">
+                    <div class="card-body text-center">
+                        <h5 class="card-title">Derslerim</h5>
+                        <p class="card-text">Derslerinizi yönetin</p>
+                        <a asp-controller="Course" asp-action="Index" class="btn btn-primary">Dersler</a>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6 mb-3">
+                <div class="card">
+                    <div class="card-body text-center">
+                        <h5 class="card-title">Sınavlarım</h5>
+                        <p class="card-text">Sınavlarınızı yönetin</p>
+                        <a asp-controller="Exam" asp-action="Index" class="btn btn-primary">Sınavlar</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        @if (ViewBag.MyExams != null && ((IEnumerable<OnlineExamProject.Models.Exam>)ViewBag.MyExams).Any())
+        {
+            <div class="row mt-4">
+                <div class="col-12">
+                    <h3>Son Sınavlarım</h3>
+                    <div class="table-responsive">
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th>Sınav Adı</th>
+                                    <th>Ders</th>
+                                    <th>Başlangıç</th>
+                                    <th>Bitiş</th>
+                                    <th>Durum</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var exam in ((IEnumerable<OnlineExamProject.Models.Exam>)ViewBag.MyExams).Take(5))
+                                {
+                                    <tr>
+                                        <td>@exam.ExamTitle</td>
+                                        <td>@exam.Course.CourseName</td>
+                                        <td>@exam.StartTime.ToString("dd.MM.yyyy HH:mm")</td>
+                                        <td>@exam.EndTime.ToString("dd.MM.yyyy HH:mm")</td>
+                                        <td>
+                                            @{
+                                                var now = DateTime.Now;
+                                                var status = now < exam.StartTime ? "Bekliyor" : 
+                                                           now > exam.EndTime ? "Bitti" : "Aktif";
+                                                var badgeClass = now < exam.StartTime ? "bg-warning" : 
+                                                               now > exam.EndTime ? "bg-secondary" : "bg-success";
+                                            }
+                                            <span class="badge @badgeClass">@status</span>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        }
+    }
+</div>

@@ -1,0 +1,87 @@
+@model IEnumerable<OnlineExamProject.Models.Exam>
+
+@{
+    ViewData["Title"] = "Beklenen Sınavlar";
+}
+
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h4><i class="fas fa-clock"></i> Beklenen Sınavlar</h4>
+                    <a asp-action="ActiveExams" class="btn btn-success">
+                        <i class="fas fa-play"></i> Aktif Sınavlar
+                    </a>
+                </div>
+                <div class="card-body">
+                    @if (Model != null && Model.Any())
+                    {
+                        <div class="table-responsive">
+                            <table class="table table-striped">
+                                <thead>
+                                    <tr>
+                                        <th>Sınav Adı</th>
+                                        <th>Ders</th>
+                                        <th>Öğretmen</th>
+                                        <th>Başlama Tarihi</th>
+                                        <th>Bitiş Tarihi</th>
+                                        <th>Kalan Süre</th>
+                                        <th>İşlemler</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var exam in Model)
+                                    {
+                                        <tr>
+                                            <td>@exam.ExamTitle</td>
+                                            <td>@exam.Course.CourseName</td>
+                                            <td>@exam.Teacher.FullName</td>
+                                            <td>@exam.StartTime.ToString("dd.MM.yyyy HH:mm")</td>
+                                            <td>@exam.EndTime.ToString("dd.MM.yyyy HH:mm")</td>
+                                            <td>
+                                                @{
+                                                    var timeUntilStart = exam.StartTime - DateTime.Now;
+                                                    if (timeUntilStart.TotalDays > 1)
+                                                    {
+                                                        <span class="badge bg-info">@((int)timeUntilStart.TotalDays) gün kaldı</span>
+                                                    }
+                                                    else if (timeUntilStart.TotalHours > 1)
+                                                    {
+                                                        <span class="badge bg-warning">@((int)timeUntilStart.TotalHours) saat kaldı</span>
+                                                    }
+                                                    else if (timeUntilStart.TotalMinutes > 0)
+                                                    {
+                                                        <span class="badge bg-danger">@((int)timeUntilStart.TotalMinutes) dakika kaldı</span>
+                                                    }
+                                                    else
+                                                    {
+                                                        <span class="badge bg-success">Sınav başladı!</span>
+                                                    }
+                                                }
+                                            </td>
+                                            <td>
+                                                <button class="btn btn-sm btn-outline-primary" disabled>
+                                                    <i class="fas fa-eye"></i> Detay
+                                                </button>
+                                                <span class="text-muted small">Sınav henüz başlamadı</span>
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="alert alert-info text-center">
+                            <i class="fas fa-info-circle fa-2x mb-3"></i>
+                            <h5>Beklenen sınav bulunmuyor</h5>
+                            <p>Size atanmış ve henüz başlamamış sınav bulunmuyor.</p>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

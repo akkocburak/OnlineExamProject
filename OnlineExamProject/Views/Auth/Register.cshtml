@@ -1,0 +1,115 @@
+@{
+    ViewData["Title"] = "Kayıt Ol";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card shadow">
+                <div class="card-header bg-success text-white text-center">
+                    <h3>Kayıt Ol</h3>
+                </div>
+                <div class="card-body">
+                    @if (TempData["SuccessMessage"] != null)
+                    {
+                        <div class="alert alert-success">@TempData["SuccessMessage"]</div>
+                    }
+                    @if (TempData["ErrorMessage"] != null)
+                    {
+                        <div class="alert alert-danger">@TempData["ErrorMessage"]</div>
+                    }
+
+                    <!-- Rol Seçimi Toggle -->
+                    <div class="text-center mb-4">
+                        <div class="d-flex justify-content-center align-items-center">
+                            <span class="me-3 fw-bold" id="studentLabel" style="color: #198754;">Öğrenci</span>
+                            <div class="form-check form-switch" style="font-size: 1.5rem;">
+                                <input class="form-check-input" type="checkbox" id="roleToggle" style="cursor: pointer;">
+                            </div>
+                            <span class="ms-3 fw-bold" id="teacherLabel">Öğretmen</span>
+                        </div>
+                    </div>
+
+                    <form asp-action="Register" method="post">
+                        <input type="hidden" id="roleInput" name="role" value="Student">
+                        
+                        <div class="mb-3">
+                            <label for="fullName" class="form-label">Ad Soyad</label>
+                            <input type="text" class="form-control" id="fullName" name="fullName" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="email" class="form-label">E-posta</label>
+                            <input type="email" class="form-control" id="email" name="email" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="password" class="form-label">Şifre</label>
+                            <input type="password" class="form-control" id="password" name="password" required>
+                        </div>
+                        <div class="d-grid">
+                            <button type="submit" class="btn btn-success" id="registerBtn">
+                                <i class="fas fa-user-plus"></i> Öğrenci Olarak Kayıt Ol
+                            </button>
+                        </div>
+                    </form>
+                    <div class="text-center mt-3">
+                        <p>Zaten hesabınız var mı? <a asp-action="Login">Giriş Yap</a></p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    #roleToggle {
+        width: 60px;
+        height: 30px;
+    }
+
+    #studentLabel.active {
+        color: #198754 !important;
+        font-weight: bold;
+    }
+
+    #teacherLabel.active {
+        color: #198754 !important;
+        font-weight: bold;
+    }
+
+    #studentLabel, #teacherLabel {
+        transition: color 0.3s ease;
+    }
+</style>
+
+<script>
+    document.getElementById('roleToggle').addEventListener('change', function() {
+        var roleInput = document.getElementById('roleInput');
+        var registerBtn = document.getElementById('registerBtn');
+        var studentLabel = document.getElementById('studentLabel');
+        var teacherLabel = document.getElementById('teacherLabel');
+        
+        if (this.checked) {
+            // Öğretmen seçildi
+            roleInput.value = 'Teacher';
+            registerBtn.innerHTML = '<i class="fas fa-user-plus"></i> Öğretmen Olarak Kayıt Ol';
+            studentLabel.style.color = '#6c757d';
+            teacherLabel.style.color = '#198754';
+            studentLabel.classList.remove('active');
+            teacherLabel.classList.add('active');
+        } else {
+            // Öğrenci seçildi
+            roleInput.value = 'Student';
+            registerBtn.innerHTML = '<i class="fas fa-user-plus"></i> Öğrenci Olarak Kayıt Ol';
+            studentLabel.style.color = '#198754';
+            teacherLabel.style.color = '#6c757d';
+            studentLabel.classList.add('active');
+            teacherLabel.classList.remove('active');
+        }
+    });
+
+    // Sayfa yüklendiğinde başlangıç durumunu ayarla
+    window.addEventListener('DOMContentLoaded', function() {
+        document.getElementById('studentLabel').classList.add('active');
+    });
+</script>

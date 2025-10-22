@@ -1,0 +1,49 @@
+@model OnlineExamProject.Models.StudentExam
+
+@{
+    ViewData["Title"] = "Öğrenci Cevapları";
+    var answers = (IEnumerable<OnlineExamProject.Models.StudentAnswer>)ViewBag.Answers;
+}
+
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-12">
+            <h2>@Model.Student.FullName - @Model.Exam.ExamTitle</h2>
+            <hr>
+
+            <div class="card">
+                <div class="card-body">
+                    @if (answers != null && answers.Any())
+                    {
+                        <ol>
+                            @foreach (var a in answers)
+                            {
+                                <li class="mb-3">
+                                    <div class="fw-bold">@a.Question.QuestionText</div>
+                                    @if (!string.IsNullOrEmpty(a.Question.ImagePath))
+                                    {
+                                        <img src="@a.Question.ImagePath" class="img-fluid mb-2" style="max-height:150px;" />
+                                    }
+                                    <div>
+                                        Öğrencinin cevabı: <span class="badge bg-@(a.IsCorrect ? "success" : "danger")">@a.SelectedOption</span>
+                                        <span class="ms-2 text-muted">Doğru cevap: @a.Question.CorrectOption</span>
+                                    </div>
+                                </li>
+                            }
+                        </ol>
+                    }
+                    else
+                    {
+                        <div class="text-muted">Cevap bulunamadı.</div>
+                    }
+                </div>
+            </div>
+
+            <div class="mt-3">
+                <a asp-action="Details" asp-route-id="@Model.ExamId" class="btn btn-secondary">Geri</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+

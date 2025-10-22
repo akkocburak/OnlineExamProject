@@ -1,0 +1,142 @@
+@model OnlineExamProject.Models.Exam
+
+@{
+    ViewData["Title"] = "Sınav Detayları";
+}
+
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-12">
+            <h2>Sınav Detayları</h2>
+            <hr>
+            
+            <div class="card">
+                <div class="card-header">
+                    <h4>@Model.ExamTitle</h4>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <p><strong>Ders:</strong> @Model.Course.CourseName</p>
+                            <p><strong>Öğretmen:</strong> @Model.Teacher.FullName</p>
+                            <p><strong>Başlangıç:</strong> @Model.StartTime.ToString("dd.MM.yyyy HH:mm")</p>
+                            <p><strong>Bitiş:</strong> @Model.EndTime.ToString("dd.MM.yyyy HH:mm")</p>
+                        </div>
+                        <div class="col-md-6">
+                            <p><strong>Soru Sayısı:</strong> @Model.Questions.Count</p>
+                            <p><strong>Geri Dönüş:</strong> @(Model.AllowBackNavigation ? "İzin Veriliyor" : "İzin Verilmiyor")</p>
+                            <p><strong>Durum:</strong> 
+                                @{
+                                    var now = DateTime.Now;
+                                    var status = now < Model.StartTime ? "Bekliyor" : 
+                                               now > Model.EndTime ? "Bitti" : "Aktif";
+                                    var badgeClass = now < Model.StartTime ? "bg-warning" : 
+                                                   now > Model.EndTime ? "bg-secondary" : "bg-success";
+                                }
+                                <span class="badge @badgeClass">@status</span>
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card mt-4">
+                <div class="card-header">
+                    <h5>Sorular</h5>
+                </div>
+                <div class="card-body">
+                    @if (Model.Questions != null && Model.Questions.Any())
+                    {
+                        <ol>
+                            @foreach (var q in Model.Questions)
+                            {
+                                <li class="mb-3">
+                                    <div class="mb-2">@q.QuestionText</div>
+                                    @if (!string.IsNullOrEmpty(q.ImagePath))
+                                    {
+                                        <img src="@q.ImagePath" alt="Soru Resmi" class="img-fluid mb-2" style="max-height:150px;" />
+                                    }
+                                    <div class="small text-muted">Doğru cevap: @q.CorrectOption, Puan: @q.Points</div>
+                                </li>
+                            }
+                        </ol>
+                    }
+                    else
+                    {
+                        <div class="text-muted">Bu sınava ait soru bulunamadı.</div>
+                    }
+                </div>
+            </div>
+            
+            @if (ViewBag.Results != null && ((IEnumerable<OnlineExamProject.Models.StudentExam>)ViewBag.Results).Any())
+            {
+                <div class="mt-4">
+                    <h4>Sınav Sonuçları</h4>
+                    <div class="table-responsive">
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th>Öğrenci</th>
+                                    <th>Başlangıç</th>
+                                    <th>Bitiş</th>
+                                    <th>Puan</th>
+                                    <th>Durum</th>
+                                    <th></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var result in (IEnumerable<OnlineExamProject.Models.StudentExam>)ViewBag.Results)
+                                {
+                                    <tr>
+                                        <td>@result.Student.FullName</td>
+                                        <td>@result.StartedAt?.ToString("dd.MM.yyyy HH:mm")</td>
+                                        <td>@result.FinishedAt?.ToString("dd.MM.yyyy HH:mm")</td>
+                                        <td>
+                                            @if (result.Completed && result.Score.HasValue)
+                                            {
+                                                <span class="badge bg-@(result.Score >= 70 ? "success" : result.Score >= 50 ? "warning" : "danger")">
+                                                    @result.Score%
+                                                </span>
+                                            }
+                                            else
+                                            {
+                                                <span class="text-muted">-</span>
+                                            }
+                                        </td>
+                                        <td>
+                                            @if (result.Completed)
+                                            {
+                                                <span class="badge bg-success">Tamamlandı</span>
+                                            }
+                                            else
+                                            {
+                                                <span class="badge bg-warning">Devam Ediyor</span>
+                                            }
+                                        </td>
+                                        <td>
+                                            <a asp-action="ViewAnswers" asp-route-studentExamId="@result.StudentExamId" class="btn btn-sm btn-outline-info">Cevapları Görüntüle</a>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            }
+            else
+            {
+                <div class="mt-4">
+                    <div class="alert alert-info">
+                        <h5>Henüz sınava katılan öğrenci bulunmuyor.</h5>
+                    </div>
+                </div>
+            }
+            
+            <div class="mt-4">
+                <a asp-action="Edit" asp-route-id="@Model.ExamId" class="btn btn-warning">Düzenle</a>
+                <a asp-action="Index" class="btn btn-secondary">Geri Dön</a>
+            </div>
+        </div>
+    </div>
+</div>
+

@@ -1,0 +1,516 @@
+@model IEnumerable<OnlineExamProject.Models.Question>
+
+@{
+    ViewData["Title"] = "Soru Ekleme";
+    var examId = ViewBag.ExamId;
+    var examTitle = ViewBag.ExamTitle;
+}
+
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-12">
+            <h2>Soru Ekleme - @examTitle</h2>
+            <hr>
+            
+            @if (TempData["SuccessMessage"] != null)
+            {
+                <div class="alert alert-success">@TempData["SuccessMessage"]</div>
+            }
+            @if (TempData["ErrorMessage"] != null)
+            {
+                <div class="alert alert-danger">@TempData["ErrorMessage"]</div>
+            }
+
+            <!-- Soru Bankasından Ekleme: Buton + Modal (çoklu seçim) -->
+            <div class="d-flex justify-content-end mb-3">
+                <button type="button" class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#questionBankModal">
+                    <i class="fas fa-database"></i> Soru Bankasından Ekle
+                </button>
+                <button type="button" class="btn btn-outline-secondary ms-2" data-bs-toggle="modal" data-bs-target="#existingQuestionsModal">
+                    <i class="fas fa-list"></i> Önceki Sorulardan Ekle
+                </button>
+            </div>
+
+            <div class="modal fade" id="questionBankModal" tabindex="-1" aria-labelledby="questionBankModalLabel" aria-hidden="true">
+                <div class="modal-dialog modal-xl modal-dialog-scrollable">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title" id="questionBankModalLabel">Soru Bankası</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                        </div>
+                        <div class="modal-body">
+                            @if (ViewBag.QuestionBank != null && ((IEnumerable<OnlineExamProject.Models.QuestionBank>)ViewBag.QuestionBank).Any())
+                            {
+                                <div class="table-responsive">
+                                    <table class="table table-hover align-middle">
+                                        <thead>
+                                            <tr>
+                                                <th style="width:40px;"><input type="checkbox" id="selectAllQb" /></th>
+                                                <th>Soru</th>
+                                                <th>Zorluk</th>
+                                                <th>Puan</th>
+                                                <th>Ders</th>
+                                                <th style="width: 120px;">Tek Ekle</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            @foreach (var qb in (IEnumerable<OnlineExamProject.Models.QuestionBank>)ViewBag.QuestionBank)
+                                            {
+                                                <tr>
+                                                    <td>
+                                                        <input type="checkbox" class="qb-select" value="@qb.QuestionBankId" />
+                                                    </td>
+                                                    <td>
+                                                        @qb.QuestionText.Substring(0, Math.Min(100, qb.QuestionText.Length))@(qb.QuestionText.Length > 100 ? "..." : "")
+                                                    </td>
+                                                    <td>
+                                                        <span class="badge bg-@(qb.Difficulty == "Kolay" ? "success" : qb.Difficulty == "Orta" ? "warning" : "danger")">@qb.Difficulty</span>
+                                                    </td>
+                                                    <td><span class="badge bg-info">@qb.Points</span></td>
+                                                    <td>@qb.Course.CourseName</td>
+                                                    <td>
+                                                        <button type="button" class="btn btn-sm btn-outline-primary" onclick="addFromQuestionBank(@qb.QuestionBankId)">
+                                                            <i class="fas fa-plus"></i>
+                                                        </button>
+                                                    </td>
+                                                </tr>
+                                            }
+                                        </tbody>
+                                    </table>
+                                </div>
+                            }
+                            else
+                            {
+                                <div class="alert alert-info">Bu ders için soru bankasında soru bulunamadı.</div>
+                            }
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Kapat</button>
+                            <button type="button" class="btn btn-primary" onclick="addFromQuestionBankBulk()">
+                                <i class="fas fa-plus"></i> Seçilenleri Ekle
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Önceki Sorular Modali (Soru Bankası = DB'deki mevcut sorular) -->
+            <div class="modal fade" id="existingQuestionsModal" tabindex="-1" aria-labelledby="existingQuestionsModalLabel" aria-hidden="true">
+                <div class="modal-dialog modal-xl modal-dialog-scrollable">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title" id="existingQuestionsModalLabel">Önceki Sorular</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                        </div>
+                        <div class="modal-body">
+                            @{
+                                var existing = ViewBag.ReusableQuestions as IEnumerable<OnlineExamProject.Models.Question>;
+                            }
+                            @if (existing != null && existing.Any())
+                            {
+                                <div class="table-responsive">
+                                    <table class="table table-hover align-middle">
+                                        <thead>
+                                            <tr>
+                                                <th style="width:40px;"><input type="checkbox" id="selectAllExisting" /></th>
+                                                <th>Soru</th>
+                                                <th>Doğru</th>
+                                                <th>Puan</th>
+                                                <th style="width: 120px;">Tek Ekle</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            @foreach (var q in existing)
+                                            {
+                                                <tr>
+                                                    <td><input type="checkbox" class="existing-select" value="@q.QuestionId" /></td>
+                                                    <td>@q.QuestionText.Substring(0, Math.Min(100, q.QuestionText.Length))@(q.QuestionText.Length > 100 ? "..." : "")</td>
+                                                    <td><span class="badge bg-success">@q.CorrectOption</span></td>
+                                                    <td><span class="badge bg-info">@q.Points</span></td>
+                                                    <td>
+                                                        <button type="button" class="btn btn-sm btn-outline-primary" onclick="addFromExisting(@q.QuestionId)">
+                                                            <i class="fas fa-plus"></i>
+                                                        </button>
+                                                    </td>
+                                                </tr>
+                                            }
+                                        </tbody>
+                                    </table>
+                                </div>
+                            }
+                            else
+                            {
+                                <div class="alert alert-info">Bu ders için daha önce oluşturulmuş soru bulunamadı.</div>
+                            }
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Kapat</button>
+                            <button type="button" class="btn btn-primary" onclick="addFromExistingBulk()">
+                                <i class="fas fa-plus"></i> Seçilenleri Ekle
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Soru Ekleme Formu -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5>Yeni Soru Ekle</h5>
+                </div>
+                <div class="card-body">
+                    <form asp-action="AddQuestion" method="post" enctype="multipart/form-data">
+                        <input type="hidden" name="examId" value="@examId" />
+                        
+                        <div class="mb-3">
+                            <label for="questionText" class="form-label">Soru Metni</label>
+                            <textarea id="questionText" name="questionText" class="form-control" rows="3" required></textarea>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="imageFile" class="form-label">Soru Resmi (Opsiyonel)</label>
+                            <input type="file" id="imageFile" name="imageFile" class="form-control" accept="image/*" />
+                            <small class="form-text text-muted">Şekilli sorular için resim yükleyebilirsiniz.</small>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="optionCount" class="form-label">Seçenek Sayısı</label>
+                            <select id="optionCount" name="optionCount" class="form-control" required onchange="toggleOptionE()">
+                                <option value="4">4 Seçenek</option>
+                                <option value="5">5 Seçenek</option>
+                            </select>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="optionA" class="form-label">A) Seçenek</label>
+                                    <input type="text" id="optionA" name="optionA" class="form-control" required />
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="optionB" class="form-label">B) Seçenek</label>
+                                    <input type="text" id="optionB" name="optionB" class="form-control" required />
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="optionC" class="form-label">C) Seçenek</label>
+                                    <input type="text" id="optionC" name="optionC" class="form-control" required />
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="optionD" class="form-label">D) Seçenek</label>
+                                    <input type="text" id="optionD" name="optionD" class="form-control" required />
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row" id="optionERow" style="display: none;">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="optionE" class="form-label">E) Seçenek</label>
+                                    <input type="text" id="optionE" name="optionE" class="form-control" />
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="correctOption" class="form-label">Doğru Cevap</label>
+                                    <select id="correctOption" name="correctOption" class="form-control" required>
+                                        <option value="">Seçiniz</option>
+                                        <option value="A">A</option>
+                                        <option value="B">B</option>
+                                        <option value="C">C</option>
+                                        <option value="D">D</option>
+                                        <option value="E" id="correctOptionE" style="display: none;">E</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="points" class="form-label">Puan</label>
+                                    <input type="number" id="points" name="points" class="form-control" min="1" max="100" value="1" required />
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <button type="submit" class="btn btn-success">Soru Ekle</button>
+                            <button type="reset" class="btn btn-secondary">Temizle</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Mevcut Sorular -->
+            <div class="card">
+                <div class="card-header">
+                    <h5>Mevcut Sorular (@Model.Count())</h5>
+                </div>
+                <div class="card-body">
+                    @if (Model.Any())
+                    {
+                        <div class="table-responsive">
+                            <table class="table table-striped">
+                                <thead>
+                                    <tr>
+                                        <th>Soru</th>
+                                        <th>Seçenekler</th>
+                                        <th>Doğru Cevap</th>
+                                        <th>Puan</th>
+                                        <th>İşlemler</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var question in Model)
+                                    {
+                                        <tr>
+                                            <td>
+                                                <div style="max-width: 300px;">
+                                                    @if (!string.IsNullOrEmpty(question.ImagePath))
+                                                    {
+                                                        <img src="@question.ImagePath" alt="Soru Resmi" class="img-fluid mb-2" style="max-height: 100px;" />
+                                                    }
+                                                    <div>@question.QuestionText</div>
+                                                </div>
+                                            </td>
+                                            <td>
+                                                <div style="font-size: 0.9em;">
+                                                    <div>A) @question.OptionA</div>
+                                                    <div>B) @question.OptionB</div>
+                                                    <div>C) @question.OptionC</div>
+                                                    <div>D) @question.OptionD</div>
+                                                    @if (question.OptionCount == 5 && !string.IsNullOrEmpty(question.OptionE))
+                                                    {
+                                                        <div>E) @question.OptionE</div>
+                                                    }
+                                                </div>
+                                            </td>
+                                            <td>
+                                                <span class="badge bg-success">@question.CorrectOption</span>
+                                            </td>
+                                            <td>@question.Points</td>
+                                            <td>
+                                                <a asp-action="EditQuestion" asp-route-id="@question.QuestionId" class="btn btn-primary btn-sm me-1">Düzenle</a>
+                                                <button type="button" class="btn btn-success btn-sm me-1" 
+                                                        onclick="saveToQuestionBank(@question.QuestionId)">
+                                                    <i class="fas fa-save"></i> Bankaya Kaydet
+                                                </button>
+                                                <form asp-action="DeleteQuestion" method="post" style="display: inline;">
+                                                    <input type="hidden" name="questionId" value="@question.QuestionId" />
+                                                    <button type="submit" class="btn btn-danger btn-sm" 
+                                                            onclick="return confirm('Bu soruyu silmek istediğinizden emin misiniz?')">
+                                                        Sil
+                                                    </button>
+                                                </form>
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle"></i> Henüz hiç soru eklenmemiş. Yukarıdaki formu kullanarak soru ekleyebilirsiniz.
+                        </div>
+                    }
+                </div>
+            </div>
+
+            <div class="mt-4">
+                <a asp-action="Index" class="btn btn-primary">Sınav Listesine Dön</a>
+                <a asp-action="Details" asp-route-id="@examId" class="btn btn-info">Sınav Detayları</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    function toggleOptionE() {
+        var optionCount = document.getElementById('optionCount').value;
+        var optionERow = document.getElementById('optionERow');
+        var correctOptionE = document.getElementById('correctOptionE');
+        
+        if (optionCount == '5') {
+            optionERow.style.display = 'block';
+            correctOptionE.style.display = 'block';
+            document.getElementById('optionE').required = true;
+        } else {
+            optionERow.style.display = 'none';
+            correctOptionE.style.display = 'none';
+            document.getElementById('optionE').required = false;
+            document.getElementById('optionE').value = '';
+            
+            // E seçeneği seçiliyse A'ya çevir
+            if (document.getElementById('correctOption').value == 'E') {
+                document.getElementById('correctOption').value = 'A';
+            }
+        }
+    }
+
+    // Soru bankasından sınava ekleme
+    function addFromQuestionBank(questionBankId) {
+        var examId = @examId;
+        
+        fetch('/Exam/AddFromQuestionBank', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]')?.value
+            },
+            body: JSON.stringify({
+                examId: examId,
+                questionBankId: questionBankId
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert(data.message);
+                location.reload();
+            } else {
+                alert('Hata: ' + data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Hata:', error);
+            alert('Bir hata oluştu!');
+        });
+    }
+
+    // Sınav sorusunu soru bankasına kaydetme
+    function saveToQuestionBank(questionId) {
+        fetch('/Exam/SaveToQuestionBank', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]')?.value
+            },
+            body: JSON.stringify({
+                questionId: questionId
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert(data.message);
+            } else {
+                alert('Hata: ' + data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Hata:', error);
+            alert('Bir hata oluştu!');
+        });
+    }
+
+    // Çoklu ekleme
+    function addFromQuestionBankBulk() {
+        var examId = @examId;
+        var selected = Array.from(document.querySelectorAll('.qb-select:checked')).map(x => parseInt(x.value));
+        if (selected.length === 0) {
+            alert('Lütfen en az bir soru seçin.');
+            return;
+        }
+
+        fetch('/Exam/AddFromQuestionBankBulk', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]')?.value
+            },
+            body: JSON.stringify({ examId: examId, questionBankIds: selected })
+        })
+        .then(r => r.json())
+        .then(data => {
+            alert(data.message);
+            if (data.success) {
+                // modal kapat & sayfayı yenile
+                var modalEl = document.getElementById('questionBankModal');
+                if (modalEl) {
+                    var modal = bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl);
+                    modal.hide();
+                }
+                location.reload();
+            }
+        })
+        .catch(err => {
+            console.error(err);
+            alert('Bir hata oluştu!');
+        });
+    }
+
+    // Önceki sorulardan tek ekleme
+    function addFromExisting(questionId) {
+        var examId = @examId;
+        fetch('/Exam/AddFromExistingQuestion', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]')?.value
+            },
+            body: JSON.stringify({ examId: examId, questionId: questionId })
+        })
+        .then(r => r.json())
+        .then(data => {
+            alert(data.message);
+            if (data.success) { location.reload(); }
+        })
+        .catch(err => { console.error(err); alert('Bir hata oluştu!'); });
+    }
+
+    // Önceki sorulardan çoklu ekleme
+    function addFromExistingBulk() {
+        var examId = @examId;
+        var selected = Array.from(document.querySelectorAll('.existing-select:checked')).map(x => parseInt(x.value));
+        if (selected.length === 0) { alert('Lütfen en az bir soru seçin.'); return; }
+        fetch('/Exam/AddFromExistingQuestionBulk', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]')?.value
+            },
+            body: JSON.stringify({ examId: examId, questionIds: selected })
+        })
+        .then(r => r.json())
+        .then(data => {
+            alert(data.message);
+            if (data.success) {
+                var modalEl = document.getElementById('existingQuestionsModal');
+                if (modalEl) {
+                    var modal = bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl);
+                    modal.hide();
+                }
+                location.reload();
+            }
+        })
+        .catch(err => { console.error(err); alert('Bir hata oluştu!'); });
+    }
+
+    // Select all checkbox
+    document.addEventListener('DOMContentLoaded', function() {
+        var selectAll = document.getElementById('selectAllQb');
+        if (selectAll) {
+            selectAll.addEventListener('change', function() {
+                document.querySelectorAll('.qb-select').forEach(cb => cb.checked = selectAll.checked);
+            });
+        }
+
+        var selectAllExisting = document.getElementById('selectAllExisting');
+        if (selectAllExisting) {
+            selectAllExisting.addEventListener('change', function() {
+                document.querySelectorAll('.existing-select').forEach(cb => cb.checked = selectAllExisting.checked);
+            });
+        }
+    });
+</script>

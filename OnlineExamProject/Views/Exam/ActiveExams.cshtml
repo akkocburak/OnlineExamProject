@@ -1,0 +1,96 @@
+@model IEnumerable<OnlineExamProject.Models.Exam>
+
+@{
+    ViewData["Title"] = "Aktif Sınavlar";
+}
+
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h2>Aktif Sınavlar</h2>
+                <a asp-action="UpcomingExams" class="btn btn-outline-primary">
+                    <i class="fas fa-clock"></i> Beklenen Sınavlar
+                </a>
+            </div>
+            <hr>
+            
+            @if (Model != null && Model.Any())
+            {
+                <div class="row">
+                    @foreach (var exam in Model)
+                    {
+                        <div class="col-md-6 mb-4">
+                            <div class="card h-100">
+                                <div class="card-header bg-primary text-white">
+                                    <h5 class="card-title mb-0">@exam.ExamTitle</h5>
+                                </div>
+                                <div class="card-body">
+                                    <p class="card-text">
+                                        <strong>Ders:</strong> @exam.Course.CourseName<br>
+                                        <strong>Öğretmen:</strong> @exam.Teacher.FullName<br>
+                                        <strong>Başlangıç:</strong> @exam.StartTime.ToString("dd.MM.yyyy HH:mm")<br>
+                                        <strong>Bitiş:</strong> @exam.EndTime.ToString("dd.MM.yyyy HH:mm")<br>
+                                        <strong>Soru Sayısı:</strong> @exam.Questions.Count
+                                    </p>
+                                    
+                                    @{
+                                        var now = DateTime.Now;
+                                        var timeLeft = exam.EndTime - now;
+                                        var isActive = now >= exam.StartTime && now <= exam.EndTime;
+                                    }
+                                    
+                                    @if (isActive)
+                                    {
+                                        <div class="alert alert-success">
+                                            <strong>Kalan Süre:</strong> 
+                                            @if (timeLeft.TotalDays >= 1)
+                                            {
+                                                <span>@timeLeft.Days gün, @timeLeft.Hours saat</span>
+                                            }
+                                            else if (timeLeft.TotalHours >= 1)
+                                            {
+                                                <span>@timeLeft.Hours saat, @timeLeft.Minutes dakika</span>
+                                            }
+                                            else
+                                            {
+                                                <span>@timeLeft.Minutes dakika</span>
+                                            }
+                                        </div>
+                                        
+                                        <a asp-action="StartExam" asp-route-examId="@exam.ExamId" 
+                                           class="btn btn-success btn-block" 
+                                           onclick="return confirm('Sınava başlamak istediğinizden emin misiniz?')">
+                                            Sınava Başla
+                                        </a>
+                                    }
+                                    else if (now < exam.StartTime)
+                                    {
+                                        <div class="alert alert-warning">
+                                            <strong>Başlangıç:</strong> @exam.StartTime.ToString("dd.MM.yyyy HH:mm")
+                                        </div>
+                                        <button class="btn btn-secondary btn-block" disabled>Sınav Henüz Başlamadı</button>
+                                    }
+                                    else
+                                    {
+                                        <div class="alert alert-danger">
+                                            <strong>Süre Doldu</strong>
+                                        </div>
+                                        <button class="btn btn-secondary btn-block" disabled>Süre Doldu</button>
+                                    }
+                                </div>
+                            </div>
+                        </div>
+                    }
+                </div>
+            }
+            else
+            {
+                <div class="alert alert-info">
+                    <h5>Şu anda aktif sınav bulunmuyor.</h5>
+                    <p>Yeni sınavlar açıldığında burada görünecektir.</p>
+                </div>
+            }
+        </div>
+    </div>
+</div>

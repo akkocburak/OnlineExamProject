@@ -1,0 +1,297 @@
+@model OnlineExamProject.Models.Exam
+
+@{
+    ViewData["Title"] = "Sınav";
+}
+
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h4 class="mb-0">@Model.ExamTitle</h4>
+                        <div id="timer" class="h5 mb-0"></div>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-info">
+                        <strong>Ders:</strong> @Model.Course.CourseName<br>
+                        <strong>Süre:</strong> @((Model.EndTime - Model.StartTime).TotalMinutes) dakika<br>
+                        <strong>Soru Sayısı:</strong> @Model.Questions.Count
+                    </div>
+                    
+                    @if (Model.Questions != null && Model.Questions.Any())
+                    {
+                        <form id="examForm" method="post">
+                            @Html.AntiForgeryToken()
+                            <input type="hidden" id="studentExamId" value="@ViewBag.StudentExamId" />
+                            <input type="hidden" id="examId" value="@Model.ExamId" />
+                            <input type="hidden" id="allowBackNavigation" value="@Model.AllowBackNavigation.ToString().ToLower()" />
+                            
+                            <!-- Soru navigasyonu -->
+                            <div class="row mb-4">
+                                <div class="col-md-6">
+                                    <div class="btn-group" role="group">
+                                        <button type="button" class="btn btn-outline-secondary" id="prevBtn" onclick="previousQuestion()" disabled>
+                                            <i class="fas fa-arrow-left"></i> Önceki Soru
+                                        </button>
+                                        <button type="button" class="btn btn-outline-primary" id="nextBtn" onclick="nextQuestion()">
+                                            Sonraki Soru <i class="fas fa-arrow-right"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                                <div class="col-md-6 text-end">
+                                    <span class="badge bg-info" id="questionCounter">Soru 1 / @Model.Questions.Count</span>
+                                </div>
+                            </div>
+
+                            <!-- Soru kartları -->
+                            @for (int i = 0; i < Model.Questions.Count; i++)
+                            {
+                                var question = Model.Questions.ElementAt(i);
+                                <div class="question-card mb-4 p-4 border rounded @(i == 0 ? "" : "d-none")" 
+                                     data-question-id="@question.QuestionId" data-question-index="@i">
+                                    <h5>Soru @(i + 1):</h5>
+                                    <p class="mb-3">@question.QuestionText</p>
+                                    @if (!string.IsNullOrEmpty(question.ImagePath))
+                                    {
+                                        <img src="@question.ImagePath" alt="Soru Resmi" class="img-fluid mb-3" style="max-height:200px;" />
+                                    }
+                                    
+                                    <div class="form-check mb-2">
+                                        <input class="form-check-input" type="radio" name="question_@question.QuestionId" 
+                                               value="A" id="q@(question.QuestionId)_A" onchange="saveAnswer(@question.QuestionId, 'A')">
+                                        <label class="form-check-label" for="q@(question.QuestionId)_A">
+                                            A) @question.OptionA
+                                        </label>
+                                    </div>
+                                    <div class="form-check mb-2">
+                                        <input class="form-check-input" type="radio" name="question_@question.QuestionId" 
+                                               value="B" id="q@(question.QuestionId)_B" onchange="saveAnswer(@question.QuestionId, 'B')">
+                                        <label class="form-check-label" for="q@(question.QuestionId)_B">
+                                            B) @question.OptionB
+                                        </label>
+                                    </div>
+                                    <div class="form-check mb-2">
+                                        <input class="form-check-input" type="radio" name="question_@question.QuestionId" 
+                                               value="C" id="q@(question.QuestionId)_C" onchange="saveAnswer(@question.QuestionId, 'C')">
+                                        <label class="form-check-label" for="q@(question.QuestionId)_C">
+                                            C) @question.OptionC
+                                        </label>
+                                    </div>
+                                    <div class="form-check mb-2">
+                                        <input class="form-check-input" type="radio" name="question_@question.QuestionId" 
+                                               value="D" id="q@(question.QuestionId)_D" onchange="saveAnswer(@question.QuestionId, 'D')">
+                                        <label class="form-check-label" for="q@(question.QuestionId)_D">
+                                            D) @question.OptionD
+                                        </label>
+                                    </div>
+                                    @if (question.OptionCount == 5 && !string.IsNullOrEmpty(question.OptionE))
+                                    {
+                                        <div class="form-check mb-2">
+                                            <input class="form-check-input" type="radio" name="question_@question.QuestionId" 
+                                                   value="E" id="q@(question.QuestionId)_E" onchange="saveAnswer(@question.QuestionId, 'E')">
+                                            <label class="form-check-label" for="q@(question.QuestionId)_E">
+                                                E) @question.OptionE
+                                            </label>
+                                        </div>
+                                    }
+                                </div>
+                            }
+                            
+                            <!-- Alt navigasyon -->
+                            <div class="row mt-4">
+                                <div class="col-md-6">
+                                    <div class="btn-group" role="group">
+                                        <button type="button" class="btn btn-outline-secondary" id="prevBtnBottom" onclick="previousQuestion()" disabled>
+                                            <i class="fas fa-arrow-left"></i> Önceki Soru
+                                        </button>
+                                        <button type="button" class="btn btn-outline-primary" id="nextBtnBottom" onclick="nextQuestion()">
+                                            Sonraki Soru <i class="fas fa-arrow-right"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                                <div class="col-md-6 text-end">
+                                    <button type="button" class="btn btn-success btn-lg" onclick="submitExam()">
+                                        <i class="fas fa-check"></i> Sınavı Tamamla
+                                    </button>
+                                </div>
+                            </div>
+                        </form>
+                    }
+                    else
+                    {
+                        <div class="alert alert-warning">
+                            <h5>Bu sınavda henüz soru bulunmuyor.</h5>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Global değişkenler
+    var currentQuestionIndex = 0;
+    var totalQuestions = @Model.Questions.Count;
+    var allowBackNavigation = document.getElementById('allowBackNavigation').value === 'true';
+    var endTime = new Date('@Model.EndTime.ToString("yyyy-MM-ddTHH:mm:ss")').getTime();
+    
+    // Timer functionality
+    function updateTimer() {
+        var now = new Date().getTime();
+        var timeLeft = endTime - now;
+        
+        if (timeLeft < 0) {
+            document.getElementById('timer').innerHTML = 'SÜRE DOLDU';
+            submitExam();
+            return;
+        }
+        
+        var hours = Math.floor(timeLeft / (1000 * 60 * 60));
+        var minutes = Math.floor((timeLeft % (1000 * 60 * 60)) / (1000 * 60));
+        var seconds = Math.floor((timeLeft % (1000 * 60)) / 1000);
+        
+        document.getElementById('timer').innerHTML = 
+            (hours > 0 ? hours + ':' : '') + 
+            (minutes < 10 ? '0' : '') + minutes + ':' + 
+            (seconds < 10 ? '0' : '') + seconds;
+    }
+    
+    // Update timer every second and auto-submit when <= 0
+    setInterval(updateTimer, 1000);
+    updateTimer();
+    
+    // Soru navigasyonu
+    function showQuestion(index) {
+        // Tüm soruları gizle
+        document.querySelectorAll('.question-card').forEach(card => {
+            card.classList.add('d-none');
+        });
+        
+        // Seçili soruyu göster
+        var questionCard = document.querySelector(`[data-question-index="${index}"]`);
+        if (questionCard) {
+            questionCard.classList.remove('d-none');
+        }
+        
+        // Buton durumlarını güncelle
+        updateNavigationButtons();
+        updateQuestionCounter();
+    }
+    
+    function nextQuestion() {
+        if (currentQuestionIndex < totalQuestions - 1) {
+            currentQuestionIndex++;
+            showQuestion(currentQuestionIndex);
+        }
+    }
+    
+    function previousQuestion() {
+        if (currentQuestionIndex > 0 && allowBackNavigation) {
+            currentQuestionIndex--;
+            showQuestion(currentQuestionIndex);
+        }
+    }
+    
+    function updateNavigationButtons() {
+        var prevBtn = document.getElementById('prevBtn');
+        var nextBtn = document.getElementById('nextBtn');
+        var prevBtnBottom = document.getElementById('prevBtnBottom');
+        var nextBtnBottom = document.getElementById('nextBtnBottom');
+        
+        // Önceki soru butonu
+        if (currentQuestionIndex === 0 || !allowBackNavigation) {
+            prevBtn.disabled = true;
+            prevBtnBottom.disabled = true;
+        } else {
+            prevBtn.disabled = false;
+            prevBtnBottom.disabled = false;
+        }
+        
+        // Sonraki soru butonu
+        if (currentQuestionIndex === totalQuestions - 1) {
+            nextBtn.disabled = true;
+            nextBtnBottom.disabled = true;
+        } else {
+            nextBtn.disabled = false;
+            nextBtnBottom.disabled = false;
+        }
+    }
+    
+    function updateQuestionCounter() {
+        document.getElementById('questionCounter').textContent = 
+            `Soru ${currentQuestionIndex + 1} / ${totalQuestions}`;
+    }
+    
+    // Save answer function
+    function saveAnswer(questionId, selectedOption) {
+        var studentExamId = document.getElementById('studentExamId').value;
+        
+        fetch('/Exam/SaveAnswer', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]')?.value
+            },
+            body: JSON.stringify({
+                studentExamId: parseInt(studentExamId),
+                questionId: questionId,
+                selectedOption: selectedOption
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (!data.success) {
+                console.error('Cevap kaydedilemedi:', data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Hata:', error);
+        });
+    }
+    
+    // Submit exam function
+    function submitExam() {
+        if (confirm('Sınavı tamamlamak istediğinizden emin misiniz?')) {
+            var studentExamId = document.getElementById('studentExamId').value;
+            
+            var form = document.createElement('form');
+            form.method = 'POST';
+            form.action = '/Exam/SubmitExam';
+            
+            var input = document.createElement('input');
+            input.type = 'hidden';
+            input.name = 'studentExamId';
+            input.value = studentExamId;
+            
+            form.appendChild(input);
+            document.body.appendChild(form);
+            form.submit();
+        }
+    }
+    
+    // Klavye kısayolları
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'ArrowLeft' && allowBackNavigation) {
+            previousQuestion();
+        } else if (e.key === 'ArrowRight') {
+            nextQuestion();
+        }
+    });
+    
+    // Auto-save answers periodically (every 10s)
+    setInterval(function() {
+        var radios = document.querySelectorAll('input[type="radio"]:checked');
+        radios.forEach(function(radio) {
+            var questionId = radio.name.split('_')[1];
+            var selectedOption = radio.value;
+            saveAnswer(questionId, selectedOption);
+        });
+    }, 10000);
+    
+    // İlk yüklemede buton durumlarını ayarla
+    updateNavigationButtons();
+</script>

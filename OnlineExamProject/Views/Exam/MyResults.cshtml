@@ -1,0 +1,76 @@
+@{
+    ViewData["Title"] = "Sınav Sonuçlarım";
+}
+
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-12">
+            <h2>Sınav Sonuçlarım</h2>
+            <hr>
+            
+            @if (ViewBag.Results != null && ((IEnumerable<OnlineExamProject.Models.StudentExam>)ViewBag.Results).Any())
+            {
+                <div class="table-responsive">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>Sınav Adı</th>
+                                <th>Ders</th>
+                                <th>Başlangıç Tarihi</th>
+                                <th>Bitiş Tarihi</th>
+                                <th>Puan</th>
+                                <th>Durum</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var result in (IEnumerable<OnlineExamProject.Models.StudentExam>)ViewBag.Results)
+                            {
+                                <tr>
+                                    <td>@result.Exam.ExamTitle</td>
+                                    <td>@result.Exam.Course.CourseName</td>
+                                    <td>@result.StartedAt?.ToString("dd.MM.yyyy HH:mm")</td>
+                                    <td>@result.FinishedAt?.ToString("dd.MM.yyyy HH:mm")</td>
+                                    <td>
+                                        @if (result.Completed && result.Score.HasValue)
+                                        {
+                                            <span class="badge bg-@(result.Score >= 70 ? "success" : result.Score >= 50 ? "warning" : "danger")">
+                                                @result.Score%
+                                            </span>
+                                        }
+                                        else
+                                        {
+                                            <span class="text-muted">-</span>
+                                        }
+                                    </td>
+                                    <td>
+                                        @if (result.Completed)
+                                        {
+                                            <span class="badge bg-success">Tamamlandı</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="badge bg-warning">Devam Ediyor</span>
+                                        }
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+            else
+            {
+                <div class="alert alert-info">
+                    <h5>Henüz sınav sonucunuz bulunmuyor.</h5>
+                    <p>Aktif sınavlara katılarak sonuçlarınızı burada görebilirsiniz.</p>
+                    <a asp-action="ActiveExams" class="btn btn-primary">Aktif Sınavları Gör</a>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+
+
+
+
