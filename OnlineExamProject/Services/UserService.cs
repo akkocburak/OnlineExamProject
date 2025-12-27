@@ -86,11 +86,24 @@ namespace OnlineExamProject.Services
             return await CreateUserAsync(user);
         }
 
-        public async Task<IEnumerable<User>> GetStudentsByCourseIdAsync(int courseId)
+        public async Task<IEnumerable<User>> GetStudentsByDepartmentAndClassAsync(string department, string @class)
         {
-            // Bu metod CourseService'den öğrencileri getirecek
-            // Şimdilik tüm öğrencileri döndürüyoruz
-            return await _userRepository.GetByRoleAsync("Student");
+            return await _userRepository.GetStudentsByDepartmentAndClassAsync(department, @class);
+        }
+
+        public async Task<IEnumerable<string>> GetAllDepartmentsAsync()
+        {
+            return await _userRepository.GetAllDepartmentsAsync();
+        }
+
+        public async Task<IEnumerable<string>> GetClassesByDepartmentAsync(string department)
+        {
+            return await _userRepository.GetClassesByDepartmentAsync(department);
+        }
+
+        public async Task<IEnumerable<User>> GetAllStudentsAsync()
+        {
+            return await _userRepository.GetAllStudentsAsync();
         }
 
         private string HashPassword(string password)

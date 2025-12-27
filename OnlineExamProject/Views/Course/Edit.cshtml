@@ -21,6 +21,25 @@
                     <span asp-validation-for="CourseName" class="text-danger"></span>
                 </div>
                 
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label asp-for="Department" class="form-label">Bölüm</label>
+                            <input asp-for="Department" class="form-control" placeholder="Örn: Bilgisayar Mühendisliği" />
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label asp-for="Class" class="form-label">Sınıf</label>
+                            <input asp-for="Class" class="form-control" placeholder="Örn: 2" />
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle"></i> Bölüm ve sınıf bilgisi değiştirildiğinde, öğrenci atamaları güncellenecektir.
+                </div>
+                
                 <div class="mb-3">
                     <button type="submit" class="btn btn-success">Güncelle</button>
                     <a asp-action="Index" class="btn btn-secondary">İptal</a>
@@ -29,6 +48,9 @@
         </div>
     </div>
 </div>
+
+
+
 
 
 

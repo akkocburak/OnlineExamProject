@@ -27,6 +27,10 @@ namespace OnlineExamProject.Models
 
         public bool AllowBackNavigation { get; set; } = true;
 
+        // Sınav tipi: Vize, Final, vb.
+        [MaxLength(50)]
+        public string? ExamType { get; set; }
+
         public DateTime? CreatedAt { get; set; } = DateTime.Now;
 
         // Navigation Properties

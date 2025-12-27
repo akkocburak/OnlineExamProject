@@ -1,0 +1,83 @@
+@{
+    ViewData["Title"] = "Yeni Kullanıcı Ekle";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-8 offset-md-2">
+            <div class="card">
+                <div class="card-header">
+                    <h4>Yeni Kullanıcı Ekle</h4>
+                </div>
+                <div class="card-body">
+                    @if (TempData["ErrorMessage"] != null)
+                    {
+                        <div class="alert alert-danger">@TempData["ErrorMessage"]</div>
+                    }
+
+                    <form asp-action="CreateUser" method="post">
+                        <div class="mb-3">
+                            <label for="fullName" class="form-label">Ad Soyad *</label>
+                            <input type="text" class="form-control" id="fullName" name="fullName" required>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="email" class="form-label">E-posta *</label>
+                            <input type="email" class="form-control" id="email" name="email" required>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="password" class="form-label">Şifre *</label>
+                            <input type="password" class="form-control" id="password" name="password" required>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="role" class="form-label">Rol *</label>
+                            <select class="form-control" id="role" name="role" required onchange="toggleStudentFields()">
+                                <option value="">Seçiniz</option>
+                                <option value="Student">Öğrenci</option>
+                                <option value="Teacher">Öğretmen</option>
+                            </select>
+                        </div>
+
+                        <div id="studentFields" style="display: none;">
+                            <div class="mb-3">
+                                <label for="department" class="form-label">Bölüm</label>
+                                <input type="text" class="form-control" id="department" name="department" placeholder="Örn: Bilgisayar Mühendisliği">
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="class" class="form-label">Sınıf</label>
+                                <input type="text" class="form-control" id="class" name="class" placeholder="Örn: 2">
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <button type="submit" class="btn btn-success">
+                                <i class="fas fa-save"></i> Kullanıcı Ekle
+                            </button>
+                            <a asp-action="Users" class="btn btn-secondary">İptal</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    function toggleStudentFields() {
+        var role = document.getElementById('role').value;
+        var studentFields = document.getElementById('studentFields');
+        
+        if (role === 'Student') {
+            studentFields.style.display = 'block';
+        } else {
+            studentFields.style.display = 'none';
+        }
+    }
+</script>
+
+
+

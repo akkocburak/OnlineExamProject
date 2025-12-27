@@ -26,6 +26,13 @@ namespace OnlineExamProject.Models
         [MaxLength(20)]
         public string Role { get; set; } = string.Empty;
 
+        // Öğrenci için bölüm ve sınıf bilgileri
+        [MaxLength(100)]
+        public string? Department { get; set; }
+
+        [MaxLength(50)]
+        public string? Class { get; set; }
+
         public DateTime? CreatedAt { get; set; } = DateTime.Now;
 
         // Navigation Properties
@@ -33,6 +40,7 @@ namespace OnlineExamProject.Models
         public virtual ICollection<Exam> Exams { get; set; } = new List<Exam>();
         public virtual ICollection<StudentExam> StudentExams { get; set; } = new List<StudentExam>();
         public virtual ICollection<ExamStudent> ExamStudents { get; set; } = new List<ExamStudent>();
+        public virtual ICollection<CourseStudent> CourseStudents { get; set; } = new List<CourseStudent>();
     }
 }
 

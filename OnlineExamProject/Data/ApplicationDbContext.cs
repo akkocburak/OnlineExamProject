@@ -20,6 +20,7 @@ namespace OnlineExamProject.Data
         public DbSet<StudentAnswer> StudentAnswers { get; set; }
         public DbSet<ExamStudent> ExamStudents { get; set; }
         public DbSet<QuestionBank> QuestionBank { get; set; }
+        public DbSet<CourseStudent> CourseStudents { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -36,7 +37,7 @@ namespace OnlineExamProject.Data
                 entity.HasIndex(e => e.Email).IsUnique();
                 
                 // Role constraint
-                entity.HasCheckConstraint("CK_Users_Role", "[Role] IN ('Student', 'Teacher')");
+                entity.HasCheckConstraint("CK_Users_Role", "[Role] IN ('Student', 'Teacher', 'Admin')");
             });
 
             // Configure Course entity
@@ -83,6 +84,7 @@ namespace OnlineExamProject.Data
                 entity.Property(e => e.OptionC).IsRequired().HasMaxLength(300);
                 entity.Property(e => e.OptionD).IsRequired().HasMaxLength(300);
                 entity.Property(e => e.CorrectOption).IsRequired().HasMaxLength(1);
+                // Points alanı kaldırıldı - artık her soru eşit puanlı
                 
                 // Foreign key relationship
                 entity.HasOne(e => e.Exam)
@@ -184,6 +186,26 @@ namespace OnlineExamProject.Data
                 
                 // Difficulty constraint
                 entity.HasCheckConstraint("CK_QuestionBank_Difficulty", "[Difficulty] IN ('Kolay', 'Orta', 'Zor')");
+            });
+
+            // Configure CourseStudent entity
+            modelBuilder.Entity<CourseStudent>(entity =>
+            {
+                entity.HasKey(e => e.CourseStudentId);
+                
+                // Foreign key relationships
+                entity.HasOne(e => e.Course)
+                      .WithMany(c => c.CourseStudents)
+                      .HasForeignKey(e => e.CourseId)
+                      .OnDelete(DeleteBehavior.Cascade);
+
+                entity.HasOne(e => e.Student)
+                      .WithMany(u => u.CourseStudents)
+                      .HasForeignKey(e => e.StudentId)
+                      .OnDelete(DeleteBehavior.Cascade);
+
+                // Unique constraint - bir öğrenci aynı derse sadece bir kez atanabilir
+                entity.HasIndex(e => new { e.CourseId, e.StudentId }).IsUnique();
             });
         }
     }

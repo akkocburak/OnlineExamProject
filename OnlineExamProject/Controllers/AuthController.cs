@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Data.SqlClient;
 using OnlineExamProject.Models;
 using OnlineExamProject.Services;
 using System.Diagnostics;
@@ -17,87 +18,65 @@ namespace OnlineExamProject.Controllers
         }
 
         [HttpGet]
-        public IActionResult Login()
+        public async Task<IActionResult> Login()
         {
-            if (HttpContext.Session.GetInt32("UserId") != null)
+            var userId = HttpContext.Session.GetInt32("UserId");
+            if (userId != null)
             {
-                return RedirectToAction("Index", "Home");
+                var user = await _userService.GetUserByIdAsync(userId.Value);
+                if (user != null)
+                {
+                    if (user.Role == "Admin")
+                    {
+                        return RedirectToAction("Index", "Admin");
+                    }
+                    return RedirectToAction("Index", "Home");
+                }
             }
             return View();
         }
 
         [HttpPost]
-        public async Task<IActionResult> Login(string email, string password, string role)
+        public async Task<IActionResult> Login(string email, string password)
         {
             try
             {
                 var user = await _userService.AuthenticateAsync(email, password);
                 if (user != null)
                 {
-                    // Seçilen rol ile kullanıcının gerçek rolü eşleşiyor mu kontrol et
-                    if (user.Role != role)
-                    {
-                        TempData["ErrorMessage"] = $"Bu hesap {(user.Role == "Student" ? "öğrenci" : "öğretmen")} hesabıdır. Lütfen doğru rolü seçin.";
-                        return View();
-                    }
-
                     HttpContext.Session.SetInt32("UserId", user.UserId);
                     HttpContext.Session.SetString("UserName", user.FullName);
                     HttpContext.Session.SetString("UserRole", user.Role);
 
                     TempData["SuccessMessage"] = $"Hoş geldiniz, {user.FullName}!";
-                    return RedirectToAction("Index", "Home");
+
+                    // Kullanıcı rolüne göre yönlendir
+                    if (user.Role == "Admin")
+                    {
+                        return RedirectToAction("Index", "Admin");
+                    }
+                    else
+                    {
+                        return RedirectToAction("Index", "Home");
+                    }
                 }
 
                 TempData["ErrorMessage"] = "E-posta veya şifre hatalı!";
             }
-            catch (Exception ex)
+            catch (Microsoft.Data.SqlClient.SqlException sqlEx)
             {
-                _logger.LogError(ex, "Login hatası");
-                TempData["ErrorMessage"] = "Bir hata oluştu. Lütfen tekrar deneyin.";
-            }
-
-            return View();
-        }
-
-        [HttpGet]
-        public IActionResult Register()
-        {
-            if (HttpContext.Session.GetInt32("UserId") != null)
-            {
-                return RedirectToAction("Index", "Home");
-            }
-            return View();
-        }
-
-        [HttpPost]
-        public async Task<IActionResult> Register(string fullName, string email, string password, string role)
-        {
-            try
-            {
-                if (string.IsNullOrEmpty(fullName) || string.IsNullOrEmpty(email) || string.IsNullOrEmpty(password) || string.IsNullOrEmpty(role))
-                {
-                    ModelState.AddModelError("", "Tüm alanlar zorunludur!");
-                    return View();
-                }
-
-                var user = await _userService.RegisterAsync(fullName, email, password, role);
-                
-                TempData["SuccessMessage"] = "Kayıt başarılı! Giriş yapabilirsiniz.";
-                return RedirectToAction("Login");
-            }
-            catch (InvalidOperationException ex)
-            {
-                ModelState.AddModelError("", ex.Message);
+                _logger.LogError(sqlEx, "Veritabanı bağlantı hatası: {Message}", sqlEx.Message);
+                TempData["ErrorMessage"] = $"Veritabanı bağlantı hatası: {sqlEx.Message}. Lütfen veritabanı ayarlarını kontrol edin.";
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Register hatası");
-                ModelState.AddModelError("", "Bir hata oluştu. Lütfen tekrar deneyin.");
+                _logger.LogError(ex, "Login hatası: {Message}\n{StackTrace}", ex.Message, ex.StackTrace);
+                TempData["ErrorMessage"] = $"Bir hata oluştu: {ex.Message}. Lütfen tekrar deneyin.";
             }
 
             return View();
         }
+
 
         public IActionResult Logout()
         {

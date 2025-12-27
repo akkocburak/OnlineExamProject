@@ -76,6 +76,7 @@ namespace OnlineExamProject.Repositories
             return await _context.Exams
                 .Include(e => e.Course)
                 .Include(e => e.Teacher)
+                .Include(e => e.Questions)
                 .Include(e => e.ExamStudents)
                 .Where(e => e.ExamStudents.Any(es => es.StudentId == studentId)) // Sadece atanmış öğrenciler
                 .Where(e => e.StartTime <= now && e.EndTime >= now)
@@ -150,6 +151,7 @@ namespace OnlineExamProject.Repositories
             return await _context.Exams
                 .Include(e => e.Course)
                 .Include(e => e.Teacher)
+                .Include(e => e.Questions)
                 .Include(e => e.ExamStudents)
                 .Where(e => e.ExamStudents.Any(es => es.StudentId == studentId)) // Sadece atanmış öğrenciler
                 .Where(e => e.StartTime > now) // Henüz başlamamış sınavlar

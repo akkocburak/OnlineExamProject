@@ -19,41 +19,56 @@
                         </div>
                     }
 
-                    <form asp-action="AssignStudents" method="post">
+                    <form asp-action="AssignStudents" method="post" id="assignForm">
                         <input type="hidden" name="examId" value="@ViewBag.ExamId" />
                         
-                        <div class="mb-3">
-                            <label class="form-label">Sınava katılacak öğrencileri seçin:</label>
+                        <!-- Bölüm ve Sınıf Seçimi -->
+                        <div class="row mb-4">
+                            <div class="col-md-6">
+                                <label for="departmentSelect" class="form-label">Bölüm Seçin</label>
+                                <select class="form-select" id="departmentSelect" required>
+                                    <option value="">-- Bölüm Seçin --</option>
+                                    @if (ViewBag.Departments != null)
+                                    {
+                                        @foreach (var dept in ViewBag.Departments)
+                                        {
+                                            <option value="@dept">@dept</option>
+                                        }
+                                    }
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="classSelect" class="form-label">Sınıf Seçin</label>
+                                <select class="form-select" id="classSelect" disabled required>
+                                    <option value="">-- Önce Bölüm Seçin --</option>
+                                </select>
+                            </div>
                         </div>
 
-                        @if (Model != null && Model.Any())
-                        {
-                            <div class="row">
-                                @foreach (var student in Model)
-                                {
-                                    <div class="col-md-6 mb-2">
-                                        <div class="form-check">
-                                            <input class="form-check-input" type="checkbox" 
-                                                   name="selectedStudents" 
-                                                   value="@student.UserId" 
-                                                   id="student_@student.UserId">
-                                            <label class="form-check-label" for="student_@student.UserId">
-                                                @student.FullName (@student.Email)
-                                            </label>
-                                        </div>
+                        <div class="mb-3">
+                            <button type="button" class="btn btn-primary" id="loadStudentsBtn" disabled>
+                                <i class="fas fa-search"></i> Öğrencileri Yükle
+                            </button>
+                            <button type="button" class="btn btn-sm btn-outline-primary" onclick="selectAll()" id="selectAllBtn" style="display:none;">Tümünü Seç</button>
+                            <button type="button" class="btn btn-sm btn-outline-secondary" onclick="deselectAll()" id="deselectAllBtn" style="display:none;">Tümünü Kaldır</button>
+                        </div>
+
+                        <!-- Seçilen Öğrenciler -->
+                        <div id="studentsContainer" style="display:none;">
+                            <div class="card mb-3">
+                                <div class="card-header bg-primary text-white">
+                                    <h5 class="mb-0">Seçilen Öğrenciler</h5>
+                                </div>
+                                <div class="card-body">
+                                    <div id="studentsList" class="row">
+                                        <!-- Öğrenciler buraya eklenecek -->
                                     </div>
-                                }
+                                </div>
                             </div>
-                        }
-                        else
-                        {
-                            <div class="alert alert-info">
-                                Bu ders için öğrenci bulunamadı.
-                            </div>
-                        }
+                        </div>
 
                         <div class="mt-4">
-                            <button type="submit" class="btn btn-primary">
+                            <button type="submit" class="btn btn-success" id="submitBtn" style="display:none;">
                                 <i class="fas fa-save"></i> Öğrencileri Ata
                             </button>
                             <a asp-action="Index" class="btn btn-secondary">
@@ -68,13 +83,178 @@
 </div>
 
 <script>
-    // Tümünü seç/seçme fonksiyonu
-    function toggleAll() {
-        var checkboxes = document.querySelectorAll('input[name="selectedStudents"]');
-        var selectAllCheckbox = document.getElementById('selectAll');
+    let selectedStudents = new Set(); // Seçili öğrenci ID'lerini tutar
+
+    // Bölüm değiştiğinde sınıfları yükle
+    document.getElementById('departmentSelect').addEventListener('change', function() {
+        const department = this.value;
+        const classSelect = document.getElementById('classSelect');
+        const loadBtn = document.getElementById('loadStudentsBtn');
         
-        checkboxes.forEach(function(checkbox) {
-            checkbox.checked = selectAllCheckbox.checked;
+        if (department) {
+            // AJAX ile sınıfları getir
+            fetch('@Url.Action("GetClassesByDepartment", "Exam")?department=' + encodeURIComponent(department))
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        classSelect.innerHTML = '<option value="">-- Sınıf Seçin --</option>';
+                        data.classes.forEach(function(cls) {
+                            const option = document.createElement('option');
+                            option.value = cls;
+                            option.textContent = cls;
+                            classSelect.appendChild(option);
+                        });
+                        classSelect.disabled = false;
+                        loadBtn.disabled = true;
+                        document.getElementById('studentsContainer').style.display = 'none';
+                        document.getElementById('submitBtn').style.display = 'none';
+                        document.getElementById('selectAllBtn').style.display = 'none';
+                        document.getElementById('deselectAllBtn').style.display = 'none';
+                        selectedStudents.clear();
+                    }
+                })
+                .catch(error => {
+                    console.error('Hata:', error);
+                    alert('Sınıflar yüklenirken bir hata oluştu!');
+                });
+        } else {
+            classSelect.innerHTML = '<option value="">-- Önce Bölüm Seçin --</option>';
+            classSelect.disabled = true;
+            loadBtn.disabled = true;
+        }
+    });
+
+    // Sınıf değiştiğinde yükle butonunu aktif et
+    document.getElementById('classSelect').addEventListener('change', function() {
+        const loadBtn = document.getElementById('loadStudentsBtn');
+        loadBtn.disabled = !this.value;
+    });
+
+    // Öğrencileri yükle
+    document.getElementById('loadStudentsBtn').addEventListener('click', function() {
+        const department = document.getElementById('departmentSelect').value;
+        const selectedClass = document.getElementById('classSelect').value;
+        
+        if (!department || !selectedClass) {
+            alert('Lütfen bölüm ve sınıf seçin!');
+            return;
+        }
+
+        // AJAX ile öğrencileri getir
+        fetch('@Url.Action("GetStudentsByDepartmentAndClass", "Exam")?department=' + encodeURIComponent(department) + '&class=' + encodeURIComponent(selectedClass))
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    displayStudents(data.students);
+                    // Tüm öğrencileri otomatik seç
+                    selectAll();
+                } else {
+                    alert('Öğrenciler yüklenirken bir hata oluştu!');
+                }
+            })
+            .catch(error => {
+                console.error('Hata:', error);
+                alert('Öğrenciler yüklenirken bir hata oluştu!');
+            });
+    });
+
+    // Öğrencileri göster
+    function displayStudents(students) {
+        const container = document.getElementById('studentsContainer');
+        const list = document.getElementById('studentsList');
+        const submitBtn = document.getElementById('submitBtn');
+        const selectAllBtn = document.getElementById('selectAllBtn');
+        const deselectAllBtn = document.getElementById('deselectAllBtn');
+        
+        list.innerHTML = '';
+        selectedStudents.clear();
+        
+        if (students.length === 0) {
+            list.innerHTML = '<div class="col-12"><div class="alert alert-info">Bu bölüm ve sınıfta öğrenci bulunamadı.</div></div>';
+            container.style.display = 'none';
+            submitBtn.style.display = 'none';
+            selectAllBtn.style.display = 'none';
+            deselectAllBtn.style.display = 'none';
+            return;
+        }
+
+        students.forEach(function(student) {
+            const col = document.createElement('div');
+            col.className = 'col-md-6 mb-2';
+            col.innerHTML = `
+                <div class="form-check">
+                    <input class="form-check-input student-checkbox" type="checkbox" 
+                           name="selectedStudents" 
+                           value="${student.userId}" 
+                           id="student_${student.userId}"
+                           checked
+                           onchange="toggleStudent(${student.userId}, this.checked)">
+                    <label class="form-check-label" for="student_${student.userId}">
+                        ${student.fullName} (${student.email})
+                    </label>
+                </div>
+            `;
+            list.appendChild(col);
+            selectedStudents.add(student.userId);
         });
+
+        container.style.display = 'block';
+        submitBtn.style.display = 'inline-block';
+        selectAllBtn.style.display = 'inline-block';
+        deselectAllBtn.style.display = 'inline-block';
+        updateSubmitButton();
     }
+
+    // Öğrenci seçimini değiştir
+    function toggleStudent(userId, isChecked) {
+        if (isChecked) {
+            selectedStudents.add(userId);
+        } else {
+            selectedStudents.delete(userId);
+        }
+        updateSubmitButton();
+    }
+
+    // Tümünü seç
+    function selectAll() {
+        const checkboxes = document.querySelectorAll('.student-checkbox');
+        checkboxes.forEach(function(checkbox) {
+            checkbox.checked = true;
+            selectedStudents.add(parseInt(checkbox.value));
+        });
+        updateSubmitButton();
+    }
+
+    // Tümünü kaldır
+    function deselectAll() {
+        const checkboxes = document.querySelectorAll('.student-checkbox');
+        checkboxes.forEach(function(checkbox) {
+            checkbox.checked = false;
+            selectedStudents.delete(parseInt(checkbox.value));
+        });
+        updateSubmitButton();
+    }
+
+    // Submit butonunu güncelle
+    function updateSubmitButton() {
+        const submitBtn = document.getElementById('submitBtn');
+        if (selectedStudents.size > 0) {
+            submitBtn.disabled = false;
+            submitBtn.classList.remove('btn-secondary');
+            submitBtn.classList.add('btn-success');
+        } else {
+            submitBtn.disabled = true;
+            submitBtn.classList.remove('btn-success');
+            submitBtn.classList.add('btn-secondary');
+        }
+    }
+
+    // Form submit kontrolü
+    document.getElementById('assignForm').addEventListener('submit', function(e) {
+        if (selectedStudents.size === 0) {
+            e.preventDefault();
+            alert('En az bir öğrenci seçmelisiniz!');
+            return false;
+        }
+    });
 </script>

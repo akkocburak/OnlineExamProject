@@ -2,6 +2,8 @@ using Microsoft.AspNetCore.Mvc;
 using OnlineExamProject.Models;
 using OnlineExamProject.Services;
 using OnlineExamProject.Interfaces;
+using OfficeOpenXml;
+using OfficeOpenXml.Style;
 
 namespace OnlineExamProject.Controllers
 {
@@ -89,7 +91,7 @@ namespace OnlineExamProject.Controllers
         }
 
         [HttpPost]
-        public async Task<IActionResult> Create(string examTitle, int courseId, DateTime startTime, DateTime endTime, bool allowBackNavigation)
+        public async Task<IActionResult> Create(string examTitle, int courseId, DateTime startTime, DateTime endTime, bool allowBackNavigation, string? examType)
         {
             var userId = HttpContext.Session.GetInt32("UserId");
             if (userId == null) return RedirectToAction("Login", "Auth");
@@ -104,6 +106,7 @@ namespace OnlineExamProject.Controllers
                     StartTime = startTime,
                     EndTime = endTime,
                     AllowBackNavigation = allowBackNavigation,
+                    ExamType = examType,
                     CreatedAt = DateTime.Now
                 };
                 
@@ -134,19 +137,22 @@ namespace OnlineExamProject.Controllers
 
             var questions = await _examService.GetExamQuestionsAsync(examId);
 
-            // Aynı derse ait önceki soruları "soru bankası" olarak göster
-            var reusableQuestions = await _examService.GetQuestionsByCourseIdAsync(exam.CourseId);
+            // Aynı derse ait ve aynı sınav tipine sahip önceki soruları göster
+            var reusableQuestions = await _examService.GetQuestionsByCourseIdAndExamTypeAsync(exam.CourseId, exam.ExamType);
 
             ViewBag.ExamId = examId;
             ViewBag.ExamTitle = exam.ExamTitle;
+            ViewBag.ExamType = exam.ExamType;
             ViewBag.ReusableQuestions = reusableQuestions;
+            ViewBag.Exam = exam; // Sınav bilgisini ViewBag'e ekle
+            ViewBag.CanEdit = DateTime.Now < exam.StartTime; // Sınav başlamadıysa düzenlenebilir
             return View(questions);
         }
 
         // Soru ekleme
         [HttpPost]
         public async Task<IActionResult> AddQuestion(int examId, string questionText, int optionCount, 
-            string optionA, string optionB, string optionC, string optionD, string? optionE, char correctOption, int points, IFormFile? imageFile)
+            string optionA, string optionB, string optionC, string optionD, string? optionE, char correctOption, IFormFile? imageFile)
         {
             var userId = HttpContext.Session.GetInt32("UserId");
             if (userId == null) return RedirectToAction("Login", "Auth");
@@ -189,7 +195,6 @@ namespace OnlineExamProject.Controllers
                 OptionD = optionD,
                 OptionE = optionE,
                 CorrectOption = correctOption,
-                Points = points,
                 CoursesID = exam.CourseId
             };
 
@@ -280,7 +285,6 @@ namespace OnlineExamProject.Controllers
                     existingQuestion.OptionE = model.OptionE;
                     existingQuestion.OptionCount = model.OptionCount;
                     existingQuestion.CorrectOption = model.CorrectOption;
-                    existingQuestion.Points = model.Points;
 
                     // Opsiyonel resim güncelleme
                     if (imageFile != null && imageFile.Length > 0)
@@ -570,6 +574,136 @@ namespace OnlineExamProject.Controllers
             return View(studentExam);
         }
 
+        // Sınav sonuçlarını Excel formatında indir (öğretmen)
+        [HttpGet]
+        public async Task<IActionResult> ExportToExcel(int examId)
+        {
+            var userId = HttpContext.Session.GetInt32("UserId");
+            if (userId == null) return RedirectToAction("Login", "Auth");
+
+            var exam = await _examService.GetExamByIdAsync(examId, true);
+            if (exam == null) return NotFound();
+
+            var user = await _userService.GetUserByIdAsync(userId.Value);
+            if (user == null || user.Role != "Teacher" || exam.TeacherId != userId.Value)
+                return RedirectToAction("Index", "Home");
+
+            // Sınav sonuçlarını getir
+            var results = await _examService.GetExamResultsAsync(examId);
+            var questions = await _examService.GetExamQuestionsAsync(examId);
+            var orderedQuestions = questions.OrderBy(q => q.QuestionId).ToList();
+
+            // EPPlus lisans ayarı (non-commercial kullanım için)
+            ExcelPackage.LicenseContext = LicenseContext.NonCommercial;
+
+            using (var package = new ExcelPackage())
+            {
+                var worksheet = package.Workbook.Worksheets.Add("Sınav Sonuçları");
+
+                // Başlık satırı
+                worksheet.Cells[1, 1].Value = "Öğrenci Adı";
+                worksheet.Cells[1, 2].Value = "Puan";
+                worksheet.Cells[1, 3].Value = "Başlangıç Tarihi";
+                worksheet.Cells[1, 4].Value = "Bitiş Tarihi";
+                worksheet.Cells[1, 5].Value = "Durum";
+
+                // Soru başlıkları
+                int colIndex = 6;
+                foreach (var question in orderedQuestions)
+                {
+                    worksheet.Cells[1, colIndex].Value = $"Soru {question.QuestionId}";
+                    colIndex++;
+                }
+
+                // Başlık satırını formatla
+                using (var range = worksheet.Cells[1, 1, 1, colIndex - 1])
+                {
+                    range.Style.Font.Bold = true;
+                    range.Style.Fill.PatternType = ExcelFillStyle.Solid;
+                    range.Style.Fill.BackgroundColor.SetColor(OfficeOpenXml.Style.ExcelIndexedColor.Indexed45);
+                    range.Style.Border.BorderAround(ExcelBorderStyle.Thin);
+                }
+
+                // Veri satırları
+                int rowIndex = 2;
+                foreach (var result in results)
+                {
+                    worksheet.Cells[rowIndex, 1].Value = result.Student.FullName;
+                    worksheet.Cells[rowIndex, 2].Value = result.Score.HasValue ? result.Score.Value : 0;
+                    worksheet.Cells[rowIndex, 3].Value = result.StartedAt?.ToString("dd.MM.yyyy HH:mm") ?? "-";
+                    worksheet.Cells[rowIndex, 4].Value = result.FinishedAt?.ToString("dd.MM.yyyy HH:mm") ?? "-";
+                    worksheet.Cells[rowIndex, 5].Value = result.Completed ? "Tamamlandı" : "Devam Ediyor";
+
+                    // Öğrencinin cevaplarını getir
+                    var answers = await _studentAnswerRepository.GetByStudentExamIdAsync(result.StudentExamId);
+                    // Aynı soruya birden fazla cevap varsa, en son verilen cevabı al (en yüksek AnswerId)
+                    var answerDict = answers
+                        .GroupBy(a => a.QuestionId)
+                        .ToDictionary(g => g.Key, g => g.OrderByDescending(a => a.AnswerId).First());
+
+                    // Her soru için cevabı yaz
+                    colIndex = 6;
+                    foreach (var question in orderedQuestions)
+                    {
+                        if (answerDict.ContainsKey(question.QuestionId))
+                        {
+                            var answer = answerDict[question.QuestionId];
+                            var cellValue = $"{answer.SelectedOption} ({GetOptionText(question, answer.SelectedOption)})";
+                            if (!answer.IsCorrect)
+                            {
+                                cellValue += $" - Doğru: {question.CorrectOption}";
+                            }
+                            worksheet.Cells[rowIndex, colIndex].Value = cellValue;
+                            
+                            // Doğru cevap ise yeşil, yanlış ise kırmızı
+                            if (answer.IsCorrect)
+                            {
+                                worksheet.Cells[rowIndex, colIndex].Style.Fill.PatternType = ExcelFillStyle.Solid;
+                                worksheet.Cells[rowIndex, colIndex].Style.Fill.BackgroundColor.SetColor(OfficeOpenXml.Style.ExcelIndexedColor.Indexed43);
+                            }
+                            else
+                            {
+                                worksheet.Cells[rowIndex, colIndex].Style.Fill.PatternType = ExcelFillStyle.Solid;
+                                worksheet.Cells[rowIndex, colIndex].Style.Fill.BackgroundColor.SetColor(OfficeOpenXml.Style.ExcelIndexedColor.Indexed38);
+                            }
+                        }
+                        else
+                        {
+                            worksheet.Cells[rowIndex, colIndex].Value = "Cevaplanmadı";
+                            worksheet.Cells[rowIndex, colIndex].Style.Fill.PatternType = ExcelFillStyle.Solid;
+                            worksheet.Cells[rowIndex, colIndex].Style.Fill.BackgroundColor.SetColor(OfficeOpenXml.Style.ExcelIndexedColor.Indexed22);
+                        }
+                        colIndex++;
+                    }
+
+                    rowIndex++;
+                }
+
+                // Sütun genişliklerini ayarla
+                worksheet.Cells.AutoFitColumns();
+
+                // Dosya adı
+                var fileName = $"{exam.ExamTitle.Replace(" ", "_")}_Sonuclar_{DateTime.Now:yyyyMMdd_HHmmss}.xlsx";
+                var fileBytes = package.GetAsByteArray();
+
+                return File(fileBytes, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", fileName);
+            }
+        }
+
+        // Seçenek metnini getir
+        private string GetOptionText(Question question, char option)
+        {
+            return option switch
+            {
+                'A' => question.OptionA,
+                'B' => question.OptionB,
+                'C' => question.OptionC,
+                'D' => question.OptionD,
+                'E' => question.OptionE ?? "",
+                _ => ""
+            };
+        }
+
         // Öğrenci sonuçları
         public async Task<IActionResult> MyResults()
         {
@@ -599,12 +733,40 @@ namespace OnlineExamProject.Controllers
             if (user == null || user.Role != "Teacher" || exam.TeacherId != userId.Value)
                 return RedirectToAction("Index", "Home");
 
-            // Dersin öğrencilerini getir
-            var students = await _userService.GetStudentsByCourseIdAsync(exam.CourseId);
+            // Tüm bölümleri getir
+            var departments = await _userService.GetAllDepartmentsAsync();
             ViewBag.ExamId = examId;
             ViewBag.ExamTitle = exam.ExamTitle;
             ViewBag.CourseId = exam.CourseId;
-            return View(students);
+            ViewBag.Departments = departments;
+            return View(new List<User>()); // İlk yüklemede boş liste
+        }
+
+        // AJAX: Bölüme göre sınıfları getir
+        [HttpGet]
+        public async Task<IActionResult> GetClassesByDepartment(string department)
+        {
+            var userId = HttpContext.Session.GetInt32("UserId");
+            if (userId == null) return Json(new { success = false });
+
+            var classes = await _userService.GetClassesByDepartmentAsync(department);
+            return Json(new { success = true, classes = classes });
+        }
+
+        // AJAX: Bölüm ve sınıfa göre öğrencileri getir
+        [HttpGet]
+        public async Task<IActionResult> GetStudentsByDepartmentAndClass(string department, string @class)
+        {
+            var userId = HttpContext.Session.GetInt32("UserId");
+            if (userId == null) return Json(new { success = false });
+
+            var students = await _userService.GetStudentsByDepartmentAndClassAsync(department, @class);
+            var studentList = students.Select(s => new { 
+                userId = s.UserId, 
+                fullName = s.FullName, 
+                email = s.Email 
+            }).ToList();
+            return Json(new { success = true, students = studentList });
         }
 
         // Öğrenci atama işlemi
@@ -632,11 +794,12 @@ namespace OnlineExamProject.Controllers
             }
 
             TempData["ErrorMessage"] = "En az bir öğrenci seçmelisiniz!";
-            var students = await _userService.GetStudentsByCourseIdAsync(exam.CourseId);
+            var departments = await _userService.GetAllDepartmentsAsync();
             ViewBag.ExamId = examId;
             ViewBag.ExamTitle = exam.ExamTitle;
             ViewBag.CourseId = exam.CourseId;
-            return View(students);
+            ViewBag.Departments = departments;
+            return View(new List<User>());
         }
 
         // Beklenen sınavlar (öğrenci)
@@ -706,6 +869,13 @@ namespace OnlineExamProject.Controllers
             var source = await _examService.GetQuestionByIdAsync(dto.questionId);
             if (source == null) return Json(new { success = false, message = "Soru bulunamadı!" });
 
+            // Aynı soru metninin bu sınava daha önce eklenip eklenmediğini kontrol et
+            var existingQuestions = await _examService.GetExamQuestionsAsync(dto.examId);
+            if (existingQuestions.Any(q => q.QuestionText == source.QuestionText))
+            {
+                return Json(new { success = false, message = "Bu soru zaten sınava eklenmiş!" });
+            }
+
             var newQuestion = new Question
             {
                 ExamId = dto.examId,
@@ -718,7 +888,6 @@ namespace OnlineExamProject.Controllers
                 OptionD = source.OptionD,
                 OptionE = source.OptionE,
                 CorrectOption = source.CorrectOption,
-                Points = source.Points,
                 CoursesID = exam.CourseId
             };
 
@@ -740,11 +909,23 @@ namespace OnlineExamProject.Controllers
             if (dto.questionIds == null || dto.questionIds.Count == 0)
                 return Json(new { success = false, message = "Lütfen en az bir soru seçin." });
 
+            // Mevcut soruları al
+            var existingQuestions = await _examService.GetExamQuestionsAsync(dto.examId);
+            var existingQuestionTexts = existingQuestions.Select(q => q.QuestionText).ToHashSet();
+
             var added = 0;
+            var skipped = 0;
             foreach (var qid in dto.questionIds)
             {
                 var source = await _examService.GetQuestionByIdAsync(qid);
                 if (source == null) continue;
+
+                // Aynı soru metninin bu sınava daha önce eklenip eklenmediğini kontrol et
+                if (existingQuestionTexts.Contains(source.QuestionText))
+                {
+                    skipped++;
+                    continue;
+                }
 
                 var newQuestion = new Question
                 {
@@ -758,16 +939,18 @@ namespace OnlineExamProject.Controllers
                     OptionD = source.OptionD,
                     OptionE = source.OptionE,
                     CorrectOption = source.CorrectOption,
-                    Points = source.Points,
                     CoursesID = exam.CourseId
                 };
 
                 await _examService.AddQuestionAsync(newQuestion);
+                existingQuestionTexts.Add(source.QuestionText); // Eklenen soruyu set'e ekle
                 added++;
             }
 
-            var ok = added > 0;
-            return Json(new { success = ok, message = ok ? $"{added} soru eklendi." : "Soru eklenemedi!" });
+            var message = added > 0 
+                ? $"{added} soru eklendi." + (skipped > 0 ? $" {skipped} soru zaten mevcut olduğu için atlandı." : "")
+                : "Soru eklenemedi!";
+            return Json(new { success = added > 0, message = message });
         }
 
         // Sınav sorusunu soru bankasına kaydetme

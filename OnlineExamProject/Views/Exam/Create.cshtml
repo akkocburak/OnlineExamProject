@@ -59,12 +59,28 @@
                     </div>
                 </div>
                 
-                <div class="mb-3">
-                    <div class="form-check">
-                        <input type="checkbox" id="allowBackNavigation" name="allowBackNavigation" class="form-check-input" value="true" />
-                        <label for="allowBackNavigation" class="form-check-label">
-                            Öğrenciler sorulara geri dönebilir
-                        </label>
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label for="examType" class="form-label">Sınav Tipi</label>
+                            <select id="examType" name="examType" class="form-control">
+                                <option value="">Seçiniz</option>
+                                <option value="Vize">Vize</option>
+                                <option value="Final">Final</option>
+                                <option value="Quiz">Quiz</option>
+                                <option value="Ara Sınav">Ara Sınav</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <div class="form-check mt-4">
+                                <input type="checkbox" id="allowBackNavigation" name="allowBackNavigation" class="form-check-input" value="true" />
+                                <label for="allowBackNavigation" class="form-check-label">
+                                    Öğrenciler sorulara geri dönebilir
+                                </label>
+                            </div>
+                        </div>
                     </div>
                 </div>
                 

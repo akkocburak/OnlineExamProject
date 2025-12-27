@@ -56,7 +56,7 @@
                                     {
                                         <img src="@q.ImagePath" alt="Soru Resmi" class="img-fluid mb-2" style="max-height:150px;" />
                                     }
-                                    <div class="small text-muted">Doğru cevap: @q.CorrectOption, Puan: @q.Points</div>
+                                    <div class="small text-muted">Doğru cevap: @q.CorrectOption</div>
                                 </li>
                             }
                         </ol>
@@ -71,7 +71,12 @@
             @if (ViewBag.Results != null && ((IEnumerable<OnlineExamProject.Models.StudentExam>)ViewBag.Results).Any())
             {
                 <div class="mt-4">
-                    <h4>Sınav Sonuçları</h4>
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h4>Sınav Sonuçları</h4>
+                        <a asp-action="ExportToExcel" asp-route-examId="@Model.ExamId" class="btn btn-success">
+                            <i class="fas fa-file-excel"></i> Excel Olarak İndir
+                        </a>
+                    </div>
                     <div class="table-responsive">
                         <table class="table table-striped">
                             <thead>
@@ -133,7 +138,13 @@
             }
             
             <div class="mt-4">
-                <a asp-action="Edit" asp-route-id="@Model.ExamId" class="btn btn-warning">Düzenle</a>
+                @{
+                    var canEdit = DateTime.Now < Model.StartTime;
+                }
+                @if (canEdit)
+                {
+                    <a asp-action="Edit" asp-route-id="@Model.ExamId" class="btn btn-warning">Düzenle</a>
+                }
                 <a asp-action="Index" class="btn btn-secondary">Geri Dön</a>
             </div>
         </div>

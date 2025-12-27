@@ -13,6 +13,7 @@ namespace OnlineExamProject.Interfaces
         Task<bool> QuestionExistsAsync(int id);
         Task<int> GetQuestionCountByExamIdAsync(int examId);
         Task<IEnumerable<Question>> GetByCourseIdAsync(int courseId);
+        Task<IEnumerable<Question>> GetByCourseIdAndExamTypeAsync(int courseId, string? examType);
     }
 }
 

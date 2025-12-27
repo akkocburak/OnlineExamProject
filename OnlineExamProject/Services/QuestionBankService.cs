@@ -88,7 +88,7 @@ namespace OnlineExamProject.Services
                     OptionD = question.OptionD,
                     OptionE = question.OptionE,
                     CorrectOption = question.CorrectOption,
-                    Points = question.Points,
+                    Points = 1, // Varsayılan puan (Question modelinde Points yok, QuestionBank'te var)
                     CreatedAt = DateTime.Now
                 };
 

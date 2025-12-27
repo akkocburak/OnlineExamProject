@@ -12,6 +12,10 @@ namespace OnlineExamProject.Interfaces
         Task<User> UpdateAsync(User user);
         Task<bool> DeleteAsync(int id);
         Task<bool> UserExistsAsync(string email);
+        Task<IEnumerable<User>> GetStudentsByDepartmentAndClassAsync(string department, string @class);
+        Task<IEnumerable<string>> GetAllDepartmentsAsync();
+        Task<IEnumerable<string>> GetClassesByDepartmentAsync(string department);
+        Task<IEnumerable<User>> GetAllStudentsAsync();
     }
 }
 

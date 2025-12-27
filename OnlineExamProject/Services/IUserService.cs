@@ -14,7 +14,10 @@ namespace OnlineExamProject.Services
         Task<bool> UserExistsAsync(string email);
         Task<User?> AuthenticateAsync(string email, string password);
         Task<User> RegisterAsync(string fullName, string email, string password, string role);
-        Task<IEnumerable<User>> GetStudentsByCourseIdAsync(int courseId);
+        Task<IEnumerable<User>> GetStudentsByDepartmentAndClassAsync(string department, string @class);
+        Task<IEnumerable<string>> GetAllDepartmentsAsync();
+        Task<IEnumerable<string>> GetClassesByDepartmentAsync(string department);
+        Task<IEnumerable<User>> GetAllStudentsAsync();
     }
 }
 

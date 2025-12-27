@@ -35,6 +35,12 @@ namespace OnlineExamProject.Controllers
                 return RedirectToAction("Login", "Auth");
             }
 
+            // Admin ise Admin paneline yönlendir
+            if (user.Role == "Admin")
+            {
+                return RedirectToAction("Index", "Admin");
+            }
+
             ViewBag.UserName = user.FullName;
             ViewBag.UserRole = user.Role;
 

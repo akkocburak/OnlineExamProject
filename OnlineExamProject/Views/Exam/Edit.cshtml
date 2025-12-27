@@ -10,74 +10,103 @@
             <h2>Sınav Düzenle</h2>
             <hr>
             
+            @{
+                var canEdit = DateTime.Now < Model.StartTime;
+            }
+            
+            @if (!canEdit)
+            {
+                <div class="alert alert-warning">
+                    <strong>Bu sınav başladığı için düzenlenemez!</strong>
+                </div>
+            }
+
             <!-- Sınav Temel Bilgileri -->
             <div class="card mb-4">
                 <div class="card-header">
                     <h5>Sınav Bilgileri</h5>
                 </div>
                 <div class="card-body">
-                    <form asp-action="Edit" method="post">
-                        <input asp-for="ExamId" type="hidden" />
-                        <input asp-for="TeacherId" type="hidden" />
-                        <input asp-for="CreatedAt" type="hidden" />
-                        
-                        <div class="row">
-                            <div class="col-md-6">
-                                <div class="mb-3">
-                                    <label asp-for="ExamTitle" class="form-label">Sınav Başlığı</label>
-                                    <input asp-for="ExamTitle" class="form-control" required />
-                                    <span asp-validation-for="ExamTitle" class="text-danger"></span>
+                    @if (canEdit)
+                    {
+                        <form asp-action="Edit" method="post">
+                            <input asp-for="ExamId" type="hidden" />
+                            <input asp-for="TeacherId" type="hidden" />
+                            <input asp-for="CreatedAt" type="hidden" />
+                            
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label asp-for="ExamTitle" class="form-label">Sınav Başlığı</label>
+                                        <input asp-for="ExamTitle" class="form-control" required />
+                                        <span asp-validation-for="ExamTitle" class="text-danger"></span>
+                                    </div>
                                 </div>
-                            </div>
-                            <div class="col-md-6">
-                                <div class="mb-3">
-                                    <label asp-for="CourseId" class="form-label">Ders</label>
-                                    <select asp-for="CourseId" class="form-control" required>
-                                        <option value="">Ders Seçin</option>
-                                        @if (ViewBag.Courses != null)
-                                        {
-                                            @foreach (var course in (IEnumerable<OnlineExamProject.Models.Course>)ViewBag.Courses)
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label asp-for="CourseId" class="form-label">Ders</label>
+                                        <select asp-for="CourseId" class="form-control" required>
+                                            <option value="">Ders Seçin</option>
+                                            @if (ViewBag.Courses != null)
                                             {
-                                                <option value="@course.CourseId">@course.CourseName</option>
+                                                @foreach (var course in (IEnumerable<OnlineExamProject.Models.Course>)ViewBag.Courses)
+                                                {
+                                                    <option value="@course.CourseId">@course.CourseName</option>
+                                                }
                                             }
-                                        }
-                                    </select>
-                                    <span asp-validation-for="CourseId" class="text-danger"></span>
+                                        </select>
+                                        <span asp-validation-for="CourseId" class="text-danger"></span>
+                                    </div>
                                 </div>
                             </div>
-                        </div>
-                        
+                            
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label asp-for="StartTime" class="form-label">Başlangıç Tarihi</label>
+                                        <input asp-for="StartTime" type="datetime-local" class="form-control" required />
+                                        <span asp-validation-for="StartTime" class="text-danger"></span>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label asp-for="EndTime" class="form-label">Bitiş Tarihi</label>
+                                        <input asp-for="EndTime" type="datetime-local" class="form-control" required />
+                                        <span asp-validation-for="EndTime" class="text-danger"></span>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <div class="form-check">
+                                    <input asp-for="AllowBackNavigation" class="form-check-input" type="checkbox" />
+                                    <label asp-for="AllowBackNavigation" class="form-check-label">
+                                        Öğrenciler sorulara geri dönebilir
+                                    </label>
+                                </div>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <button type="submit" class="btn btn-success">Sınav Bilgilerini Güncelle</button>
+                                <a asp-action="Index" class="btn btn-secondary">İptal</a>
+                            </div>
+                        </form>
+                    }
+                    else
+                    {
                         <div class="row">
                             <div class="col-md-6">
-                                <div class="mb-3">
-                                    <label asp-for="StartTime" class="form-label">Başlangıç Tarihi</label>
-                                    <input asp-for="StartTime" type="datetime-local" class="form-control" required />
-                                    <span asp-validation-for="StartTime" class="text-danger"></span>
-                                </div>
-                            </div>
-                            <div class="col-md-6">
-                                <div class="mb-3">
-                                    <label asp-for="EndTime" class="form-label">Bitiş Tarihi</label>
-                                    <input asp-for="EndTime" type="datetime-local" class="form-control" required />
-                                    <span asp-validation-for="EndTime" class="text-danger"></span>
-                                </div>
+                                <p><strong>Sınav Başlığı:</strong> @Model.ExamTitle</p>
+                                <p><strong>Ders:</strong> @Model.Course.CourseName</p>
+                                <p><strong>Başlangıç:</strong> @Model.StartTime.ToString("dd.MM.yyyy HH:mm")</p>
+                                <p><strong>Bitiş:</strong> @Model.EndTime.ToString("dd.MM.yyyy HH:mm")</p>
+                                <p><strong>Geri Dönüş:</strong> @(Model.AllowBackNavigation ? "İzin Veriliyor" : "İzin Verilmiyor")</p>
                             </div>
                         </div>
-                        
                         <div class="mb-3">
-                            <div class="form-check">
-                                <input asp-for="AllowBackNavigation" class="form-check-input" type="checkbox" />
-                                <label asp-for="AllowBackNavigation" class="form-check-label">
-                                    Öğrenciler sorulara geri dönebilir
-                                </label>
-                            </div>
+                            <a asp-action="Index" class="btn btn-secondary">Geri Dön</a>
                         </div>
-                        
-                        <div class="mb-3">
-                            <button type="submit" class="btn btn-success">Sınav Bilgilerini Güncelle</button>
-                            <a asp-action="Index" class="btn btn-secondary">İptal</a>
-                        </div>
-                    </form>
+                    }
                 </div>
             </div>
 
@@ -85,7 +114,10 @@
             <div class="card mb-4">
                 <div class="card-header d-flex justify-content-between align-items-center">
                     <h5>Öğrenci Atama</h5>
-                    <a asp-action="AssignStudents" asp-route-examId="@Model.ExamId" class="btn btn-primary btn-sm">Öğrenci Ata/Düzenle</a>
+                    @if (canEdit)
+                    {
+                        <a asp-action="AssignStudents" asp-route-examId="@Model.ExamId" class="btn btn-primary btn-sm">Öğrenci Ata/Düzenle</a>
+                    }
                 </div>
                 <div class="card-body">
                     @if (ViewBag.AssignedStudents != null && ((IEnumerable<OnlineExamProject.Models.User>)ViewBag.AssignedStudents).Any())
@@ -110,7 +142,10 @@
             <div class="card mb-4">
                 <div class="card-header d-flex justify-content-between align-items-center">
                     <h5>Sorular</h5>
-                    <a asp-action="AddQuestions" asp-route-examId="@Model.ExamId" class="btn btn-primary btn-sm">Soru Ekle/Düzenle</a>
+                    @if (canEdit)
+                    {
+                        <a asp-action="AddQuestions" asp-route-examId="@Model.ExamId" class="btn btn-primary btn-sm">Soru Ekle/Düzenle</a>
+                    }
                 </div>
                 <div class="card-body">
                     @if (Model.Questions != null && Model.Questions.Any())
@@ -120,8 +155,10 @@
                                 <thead>
                                     <tr>
                                         <th>Soru</th>
-                                        <th>Puan</th>
-                                        <th>İşlemler</th>
+                                        @if (canEdit)
+                                        {
+                                            <th>İşlemler</th>
+                                        }
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -133,14 +170,16 @@
                                                     @(q.QuestionText.Length > 100 ? q.QuestionText.Substring(0, 100) + "..." : q.QuestionText)
                                                 </div>
                                             </td>
-                                            <td>@q.Points</td>
-                                            <td>
-                                                <a asp-action="EditQuestion" asp-route-id="@q.QuestionId" class="btn btn-sm btn-outline-primary">Düzenle</a>
-                                                <form asp-action="DeleteQuestion" method="post" class="d-inline">
-                                                    <input type="hidden" name="questionId" value="@q.QuestionId" />
-                                                    <button type="submit" class="btn btn-sm btn-outline-danger" onclick="return confirm('Bu soruyu silmek istediğinizden emin misiniz?')">Sil</button>
-                                                </form>
-                                            </td>
+                                            @if (canEdit)
+                                            {
+                                                <td>
+                                                    <a asp-action="EditQuestion" asp-route-id="@q.QuestionId" class="btn btn-sm btn-outline-primary">Düzenle</a>
+                                                    <form asp-action="DeleteQuestion" method="post" class="d-inline">
+                                                        <input type="hidden" name="questionId" value="@q.QuestionId" />
+                                                        <button type="submit" class="btn btn-sm btn-outline-danger" onclick="return confirm('Bu soruyu silmek istediğinizden emin misiniz?')">Sil</button>
+                                                    </form>
+                                                </td>
+                                            }
                                         </tr>
                                     }
                                 </tbody>

@@ -47,11 +47,6 @@ namespace OnlineExamProject.Models
         [MaxLength(1)]
         public char CorrectOption { get; set; }
 
-        // Soru puanı
-        [Required]
-        [Range(1, 100)]
-        public int Points { get; set; } = 1;
-
         // Ders ID (soru bankası için)
         public int? CoursesID { get; set; }
 

@@ -1,0 +1,64 @@
+@{
+    ViewData["Title"] = "Admin Paneli";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-12">
+            <h2>Admin Paneli</h2>
+            <hr>
+            
+            @if (TempData["SuccessMessage"] != null)
+            {
+                <div class="alert alert-success">@TempData["SuccessMessage"]</div>
+            }
+            @if (TempData["ErrorMessage"] != null)
+            {
+                <div class="alert alert-danger">@TempData["ErrorMessage"]</div>
+            }
+
+            <div class="row">
+                <div class="col-md-4">
+                    <div class="card text-white bg-primary mb-3">
+                        <div class="card-header">Öğrenci Sayısı</div>
+                        <div class="card-body">
+                            <h1 class="card-title">@ViewBag.StudentCount</h1>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="card text-white bg-success mb-3">
+                        <div class="card-header">Öğretmen Sayısı</div>
+                        <div class="card-body">
+                            <h1 class="card-title">@ViewBag.TeacherCount</h1>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="card text-white bg-info mb-3">
+                        <div class="card-header">Ders Sayısı</div>
+                        <div class="card-body">
+                            <h1 class="card-title">@ViewBag.CourseCount</h1>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="mt-4">
+                <h4>Hızlı İşlemler</h4>
+                <div class="list-group">
+                    <a asp-action="Users" class="list-group-item list-group-item-action">
+                        <i class="fas fa-users"></i> Kullanıcı Yönetimi
+                    </a>
+                    <a asp-action="CreateUser" class="list-group-item list-group-item-action">
+                        <i class="fas fa-user-plus"></i> Yeni Kullanıcı Ekle
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+

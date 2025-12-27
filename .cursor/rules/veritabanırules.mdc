@@ -1,6 +1,0 @@
----
-description:
-#projede kullanılan veri tabanı coonnection string= @"Data Source=DESKTOP-FS0K178\SQLEXPRESS;Initial Catalog=DonanimDB;User ID=sa;Password=asd123;Encrypt=False;TrustServerCertificate=True" budur veri tabanı scriptinide sana verdim @database sodyasının içinde bulunmaktadır 
-globs:
-alwaysApply: true
----

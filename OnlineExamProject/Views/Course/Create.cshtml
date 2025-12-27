@@ -25,6 +25,25 @@
                     <input type="text" id="courseName" name="courseName" class="form-control" placeholder="Örn: Matematik, Fizik, Kimya..." required />
                 </div>
                 
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label for="department" class="form-label">Bölüm</label>
+                            <input type="text" id="department" name="department" class="form-control" placeholder="Örn: Bilgisayar Mühendisliği" />
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label for="class" class="form-label">Sınıf</label>
+                            <input type="text" id="class" name="class" class="form-control" placeholder="Örn: 2" />
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle"></i> Bölüm ve sınıf bilgisi girildiğinde, bu bölüm ve sınıftaki tüm öğrenciler otomatik olarak bu derse atanacaktır.
+                </div>
+                
                 <div class="mb-3">
                     <button type="submit" class="btn btn-success">Ders Oluştur</button>
                     <a asp-action="Index" class="btn btn-secondary">İptal</a>

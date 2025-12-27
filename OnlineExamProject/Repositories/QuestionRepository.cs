@@ -88,6 +88,22 @@ namespace OnlineExamProject.Repositories
                 .OrderByDescending(q => q.Exam.CreatedAt)
                 .ToListAsync();
         }
+
+        public async Task<IEnumerable<Question>> GetByCourseIdAndExamTypeAsync(int courseId, string? examType)
+        {
+            var query = _context.Questions
+                .Include(q => q.Exam)
+                .Where(q => q.CoursesID == courseId);
+
+            if (!string.IsNullOrEmpty(examType))
+            {
+                query = query.Where(q => q.Exam.ExamType == examType);
+            }
+
+            return await query
+                .OrderByDescending(q => q.Exam.CreatedAt)
+                .ToListAsync();
+        }
     }
 }
 

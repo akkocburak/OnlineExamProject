@@ -114,8 +114,7 @@ namespace OnlineExamProject.Repositories
                 OptionC = questionBank.OptionC,
                 OptionD = questionBank.OptionD,
                 OptionE = questionBank.OptionE,
-                CorrectOption = questionBank.CorrectOption,
-                Points = questionBank.Points
+                CorrectOption = questionBank.CorrectOption
             };
 
             _context.Questions.Add(question);

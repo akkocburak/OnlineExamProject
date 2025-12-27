@@ -65,8 +65,97 @@ namespace OnlineExamProject.Repositories
             return await _context.Courses
                 .AnyAsync(c => c.CourseId == id);
         }
+
+        public async Task<IEnumerable<Course>> GetCoursesByStudentIdAsync(int studentId)
+        {
+            return await _context.CourseStudents
+                .Where(cs => cs.StudentId == studentId)
+                .Include(cs => cs.Course)
+                .ThenInclude(c => c.Teacher)
+                .Select(cs => cs.Course)
+                .ToListAsync();
+        }
+
+        public async Task<IEnumerable<User>> GetStudentsByCourseIdAsync(int courseId)
+        {
+            return await _context.CourseStudents
+                .Where(cs => cs.CourseId == courseId)
+                .Include(cs => cs.Student)
+                .Select(cs => cs.Student)
+                .ToListAsync();
+        }
+
+        public async Task<bool> AssignStudentToCourseAsync(int courseId, int studentId)
+        {
+            try
+            {
+                // Zaten atanmış mı kontrol et
+                var exists = await _context.CourseStudents
+                    .AnyAsync(cs => cs.CourseId == courseId && cs.StudentId == studentId);
+
+                if (exists) return true; // Zaten atanmış, başarılı sayılır
+
+                var courseStudent = new CourseStudent
+                {
+                    CourseId = courseId,
+                    StudentId = studentId,
+                    AssignedAt = DateTime.Now
+                };
+
+                _context.CourseStudents.Add(courseStudent);
+                await _context.SaveChangesAsync();
+                return true;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        public async Task<bool> RemoveStudentFromCourseAsync(int courseId, int studentId)
+        {
+            try
+            {
+                var courseStudent = await _context.CourseStudents
+                    .FirstOrDefaultAsync(cs => cs.CourseId == courseId && cs.StudentId == studentId);
+
+                if (courseStudent == null) return true; // Zaten yok, başarılı sayılır
+
+                _context.CourseStudents.Remove(courseStudent);
+                await _context.SaveChangesAsync();
+                return true;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        public async Task<bool> RemoveAllStudentsFromCourseAsync(int courseId)
+        {
+            try
+            {
+                var courseStudents = await _context.CourseStudents
+                    .Where(cs => cs.CourseId == courseId)
+                    .ToListAsync();
+
+                if (courseStudents.Any())
+                {
+                    _context.CourseStudents.RemoveRange(courseStudents);
+                    await _context.SaveChangesAsync();
+                }
+                return true;
+            }
+            catch
+            {
+                return false;
+            }
+        }
     }
 }
+
+
+
 
 
 

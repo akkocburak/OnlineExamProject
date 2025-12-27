@@ -37,7 +37,7 @@ namespace OnlineExamProject.Controllers
         }
 
         [HttpPost]
-        public async Task<IActionResult> Create(string courseName)
+        public async Task<IActionResult> Create(string courseName, string? department, string? @class)
         {
             var userId = HttpContext.Session.GetInt32("UserId");
             if (userId == null) return RedirectToAction("Login", "Auth");
@@ -48,11 +48,24 @@ namespace OnlineExamProject.Controllers
                 {
                     CourseName = courseName,
                     TeacherId = userId.Value,
+                    Department = department,
+                    Class = @class,
                     CreatedAt = DateTime.Now
                 };
                 
-                await _courseService.CreateCourseAsync(course);
-                TempData["SuccessMessage"] = "Ders başarıyla oluşturuldu!";
+                var createdCourse = await _courseService.CreateCourseAsync(course);
+                
+                // Bölüm ve sınıf bilgisi girildiğinde, bu bölüm ve sınıftaki öğrencileri otomatik ata
+                if (!string.IsNullOrEmpty(department) && !string.IsNullOrEmpty(@class))
+                {
+                    await _courseService.AssignStudentsToCourseByDepartmentAndClassAsync(createdCourse.CourseId, department, @class);
+                    TempData["SuccessMessage"] = "Ders başarıyla oluşturuldu ve uygun öğrenciler otomatik olarak atandı!";
+                }
+                else
+                {
+                    TempData["SuccessMessage"] = "Ders başarıyla oluşturuldu!";
+                }
+                
                 return RedirectToAction("Index");
             }
 
@@ -93,8 +106,17 @@ namespace OnlineExamProject.Controllers
                 {
                     // Sadece değiştirilebilir alanları güncelle
                     existingCourse.CourseName = course.CourseName;
+                    existingCourse.Department = course.Department;
+                    existingCourse.Class = course.Class;
                     
                     await _courseService.UpdateCourseAsync(existingCourse);
+                    
+                    // Bölüm ve sınıf değiştiyse öğrenci atamalarını güncelle
+                    if (!string.IsNullOrEmpty(course.Department) && !string.IsNullOrEmpty(course.Class))
+                    {
+                        await _courseService.UpdateStudentAssignmentsForCourseAsync(existingCourse.CourseId, course.Department, course.Class);
+                    }
+                    
                     TempData["SuccessMessage"] = "Ders başarıyla güncellendi!";
                     return RedirectToAction("Index");
                 }

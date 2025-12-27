@@ -27,6 +27,7 @@ namespace OnlineExamProject.Services
         Task<IEnumerable<User>> GetStudentsForExamAssignmentAsync(int courseId);
         Task<IEnumerable<Exam>> GetUpcomingExamsForStudentAsync(int studentId);
         Task<IEnumerable<Question>> GetQuestionsByCourseIdAsync(int courseId);
+        Task<IEnumerable<Question>> GetQuestionsByCourseIdAndExamTypeAsync(int courseId, string? examType);
         Task<IEnumerable<User>> GetAssignedStudentsAsync(int examId);
     }
 }

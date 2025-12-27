@@ -165,8 +165,8 @@ namespace OnlineExamProject.Services
 
         public async Task<IEnumerable<User>> GetStudentsForExamAssignmentAsync(int courseId)
         {
-            // Bu metod CourseService'den öğrencileri getirecek
-            // Şimdilik boş liste döndürüyoruz, CourseService implementasyonu gerekli
+            // Bu metod artık kullanılmıyor, CourseService.GetStudentsByCourseIdAsync kullanılmalı
+            // Geriye dönük uyumluluk için boş liste döndürüyoruz
             return new List<User>();
         }
 
@@ -178,6 +178,11 @@ namespace OnlineExamProject.Services
         public async Task<IEnumerable<Question>> GetQuestionsByCourseIdAsync(int courseId)
         {
             return await _questionRepository.GetByCourseIdAsync(courseId);
+        }
+
+        public async Task<IEnumerable<Question>> GetQuestionsByCourseIdAndExamTypeAsync(int courseId, string? examType)
+        {
+            return await _questionRepository.GetByCourseIdAndExamTypeAsync(courseId, examType);
         }
 
         public async Task<IEnumerable<User>> GetAssignedStudentsAsync(int examId)

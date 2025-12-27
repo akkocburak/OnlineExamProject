@@ -66,8 +66,48 @@ namespace OnlineExamProject.Repositories
             return await _context.Users
                 .AnyAsync(u => u.Email == email);
         }
+
+        public async Task<IEnumerable<User>> GetStudentsByDepartmentAndClassAsync(string department, string @class)
+        {
+            return await _context.Users
+                .Where(u => u.Role == "Student" && u.Department == department && u.Class == @class)
+                .ToListAsync();
+        }
+
+        public async Task<IEnumerable<string>> GetAllDepartmentsAsync()
+        {
+            return await _context.Users
+                .Where(u => u.Role == "Student" && !string.IsNullOrEmpty(u.Department))
+                .Select(u => u.Department!)
+                .Distinct()
+                .OrderBy(d => d)
+                .ToListAsync();
+        }
+
+        public async Task<IEnumerable<string>> GetClassesByDepartmentAsync(string department)
+        {
+            return await _context.Users
+                .Where(u => u.Role == "Student" && u.Department == department && !string.IsNullOrEmpty(u.Class))
+                .Select(u => u.Class!)
+                .Distinct()
+                .OrderBy(c => c)
+                .ToListAsync();
+        }
+
+        public async Task<IEnumerable<User>> GetAllStudentsAsync()
+        {
+            return await _context.Users
+                .Where(u => u.Role == "Student")
+                .OrderBy(u => u.Department)
+                .ThenBy(u => u.Class)
+                .ThenBy(u => u.FullName)
+                .ToListAsync();
+        }
     }
 }
+
+
+
 
 
 
